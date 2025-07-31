@@ -1,8 +1,0 @@
-{
-  "serverAddr": "your.server.com",
-  "serverPort": 8388,
-  "localPort": 1080,
-  "password": "example-password",
-  "method": "aes-256-gcm",
-  "accessUrl": "ss://example"
-}
