@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ShadowChrome</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<div id="loginView">
+  <h1 id="extensionName">ShadowChrome</h1>
+  <input type="text" id="configKey" placeholder="Paste config key">
+  <button id="importBtn">Import</button>
+  <div id="loginError" class="error"></div>
+</div>
+<div id="mainView" class="hidden">
+  <div class="row">
+    <label for="serverSelect">Server:</label>
+    <select id="serverSelect"></select>
+  </div>
+  <div id="status" class="status disconnected">Disconnected</div>
+  <button id="connectBtn">Connect</button>
+  <button id="disconnectBtn" class="hidden">Disconnect</button>
+  <button id="logoutBtn">Logout</button>
+</div>
+<script src="popup.js"></script>
+</body>
+</html>
