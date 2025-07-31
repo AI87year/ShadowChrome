@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "ShadowChrome",
+  "version": "0.1.0",
+  "description": "Chrome extension to connect via ShadowSocks proxy",
+  "permissions": [
+    "storage",
+    "proxy",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://localhost:3000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ShadowChrome"
+  }
+}
