@@ -4,7 +4,7 @@ ShadowChrome is an ambitious experiment to create a secure communication channel
 
 The project itself is authored by artificial intelligence. It explores a zero‑coding workflow where detailed technical descriptions are translated directly into working code, allowing complex programs to be assembled without manual implementation.
 
-> **Status:** The legacy Node.js helper server has been removed. The service worker parses configuration links and configures Chrome's proxy settings. Running the Shadowsocks client via `chrome.sockets` is still a TODO.
+> **Status:** The legacy Node.js helper server has been removed. The service worker parses configuration links, configures Chrome's proxy settings and now hosts a fully functional `chrome.sockets` Shadowsocks client with AES‑256‑GCM encryption.
 
 ## Philosophy
 ShadowChrome is guided by a few core ideas that shape its development:
@@ -40,7 +40,7 @@ The extension is intentionally simple. Each module has a narrow responsibility t
 
 - `popup.html` / `popup.js` provide a small HTML/CSS interface with optional location selection.
 - `ssConfig.js` parses `ss://` and `ssconf://` URLs and expands subscription links into concrete server configurations.
-- `background.js` (service worker) applies proxy settings and will eventually host the Shadowsocks client using `chrome.sockets`.
+- `background.js` (service worker) applies proxy settings and runs a full Shadowsocks client using `chrome.sockets`.
 
 For a deep dive into workflow and implementation details, see [`docs/DETAILED_DOCUMENTATION.md`](docs/DETAILED_DOCUMENTATION.md).
 
