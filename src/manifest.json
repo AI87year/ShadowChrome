@@ -5,11 +5,17 @@
   "description": "Chrome extension to connect via ShadowSocks proxy",
   "permissions": [
     "storage",
-    "proxy"
+    "proxy",
+    "sockets"
   ],
   "host_permissions": [
-    "http://localhost:3000/*"
+    "<all_urls>"
   ],
+  "sockets": {
+    "tcp": {
+      "connect": "*"
+    }
+  },
   "background": {
     "service_worker": "background.js"
   },

@@ -1,99 +1,30 @@
 # ShadowChrome
 
-ShadowChrome is a Chrome extension paired with a small Node.js helper server. The server launches a local Shadowsocks proxy and is controlled by the extension over HTTP.
+ShadowChrome is a Chrome extension that aims to provide a fully self-contained Shadowsocks client. Users supply an `ss://` or `ssconf://` key and the extension handles the rest from inside the browser.
 
-## Requirements
+> **Status:** The legacy Node.js helper server has been removed. The service worker parses configuration links and configures Chrome's proxy settings. Running the Shadowsocks client via `chrome.sockets` is still a TODO.
 
-- Node.js and npm
-- Google Chrome or Chromium
+## Installation
+1. Navigate to `chrome://extensions/` and enable **Developer mode**.
+2. Click **Load unpacked** and choose the `src` directory.
 
-## Running the helper server
-
-1. Open the `server` directory and install the dependencies:
-
-```bash
-cd server
-npm install
-```
-
-2. Start the server:
-
-```bash
-npm start
-```
-
-By default the service listens only on `http://127.0.0.1:3000` and exposes a simple API:
-
-- `POST /configure` &mdash; pass `{url, localPort}` where `url` is a `ss://` or `ssconf://` link
-- `POST /start` &mdash; start the Shadowsocks process
-- `POST /stop` &mdash; stop the proxy
-- `GET  /config` &mdash; retrieve the current configuration
-
-## Installing the extension
-
-1. Navigate to `chrome://extensions/` and enable Developer mode.
-2. Click **Load unpacked** and select the `src` folder.
-3. Chrome may warn about permissions; the extension only talks to `http://localhost:3000`.
-4. The extension works unpacked, but you can create a zip for distribution:
-
-   ```bash
-   zip -r ShadowChrome.zip src
-   ```
-
-   Upload the generated archive to the Chrome Web&nbsp;Store or keep it for manual installation.
-
-
-Once the server is running click on the ShadowChrome icon:
-
-- Paste an `ss://` or `ssconf://` key in the **Access URL** field
-- Enter the local proxy port (1080 by default)
-- Press **Connect** to start the proxy
-- **Disconnect** stops the proxy and clears Chrome's proxy settings
-
-## Alternative configuration
-
-You can preconfigure `server/config.json`:
-
-```json
-{
-  "serverAddr": "example.com",
-  "serverPort": 8388,
-  "localPort": 1080,
-  "password": "password",
-  "method": "aes-256-gcm",
-  "accessUrl": "ss://..."
-}
-```
-
-After editing simply start the server and connect via the extension.
+## Usage
+1. Click the ShadowChrome icon.
+2. Paste an `ss://` or `ssconf://` access key and optionally change the local port (defaults to `1080`).
+3. Press **Connect** to save the settings and set Chrome's proxy to `127.0.0.1:<port>`.
+4. Press **Disconnect** to clear the proxy configuration.
 
 ## Development
+- All extension code resides in `src/`.
+- Run `npm install` once to set up linting.
+- Execute `npm run lint` to check code style.
 
-Modify the files in `src/` and reload the extension in Chrome. The helper server
-can be restarted with `npm start` inside the `server` directory.
+## Architecture
+- `popup.html` / `popup.js` provide a small HTML/CSS interface.
+- `ssConfig.js` parses `ss://` and `ssconf://` URLs.
+- `background.js` (service worker) applies proxy settings and will host the Shadowsocks client using `chrome.sockets`.
 
-Run `npm install` in the project root once to install development tools and
-use `npm run lint` to check the code style.
-
-## Included code
-
-ShadowChrome bundles a small subset of existing Shadowsocks tooling so the server
-can launch a proxy without any additional downloads. The following projects are
-embedded or used as dependencies:
-
-- [`encryptsocks`](https://github.com/oyyd/encryptsocks) (BSD) provides the
-  `localssjs` binary used to run a local Shadowsocks proxy. This package is a
-  modern fork of [`shadowsocks-nodejs`](https://github.com/shadowsocks/shadowsocks-nodejs).
-- [`outline-shadowsocksconfig`](https://github.com/Jigsaw-Code/outline-shadowsocksconfig)
-  (Apache&nbsp;2.0) supplies the parsing logic in `server/shadowsocks_config.js`
-  for handling `ss://` and `ssconf://` configuration URLs.
-
-These components originate from the GitHub organizations
-[shadowsocks](https://github.com/orgs/shadowsocks/repositories?type=all) and
-[Jigsaw-Code](https://github.com/orgs/Jigsaw-Code/repositories?type=all).
+Detailed documentation is available in [`docs/DETAILED_DOCUMENTATION.md`](docs/DETAILED_DOCUMENTATION.md).
 
 ## License
-
-The ShadowChrome code is released under the terms of the
-[MIT License](LICENSE). Third‑party components retain their respective
-licenses as noted above.
+[MIT](LICENSE).
