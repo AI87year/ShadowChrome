@@ -6,13 +6,13 @@
   <style>
     body { width: 200px; font-family: sans-serif; padding: 10px; }
     label { display: block; margin-top: 5px; }
-    input { width: 100%; }
+    input, select { width: 100%; }
     button { margin-top: 10px; width: 100%; }
   </style>
 </head>
 <body>
   <label>Access URL <input id="url" type="text" placeholder="ss:// or ssconf://"></label>
-  <label>Local Port <input id="port" type="number" value="1080"></label>
+  <label id="location-label" style="display:none;">Location <select id="location"></select></label>
   <button id="connect">Connect</button>
   <button id="disconnect">Disconnect</button>
   <pre id="status"></pre>
