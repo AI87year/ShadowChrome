@@ -5,9 +5,7 @@
   "description": "Chrome extension to connect via ShadowSocks proxy",
   "permissions": [
     "storage",
-    "proxy",
-    "scripting",
-    "activeTab"
+    "proxy"
   ],
   "host_permissions": [
     "http://localhost:3000/*"

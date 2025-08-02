@@ -18,6 +18,14 @@ function loadConfig() {
   return JSON.parse(fs.readFileSync(configPath, 'utf8'));
 }
 
+function validatePort(port) {
+  const n = Number(port);
+  if (!Number.isInteger(n) || n < 1 || n > 65535) {
+    throw new Error('Invalid port');
+  }
+  return n;
+}
+
 async function parseAccessUrl(url) {
   if (url.startsWith('ssconf://')) {
     const params = parseOnlineConfigUrl(url);
@@ -72,10 +80,10 @@ app.post('/configure', async (req, res) => {
     const cfg = await parseAccessUrl(url);
     const finalCfg = {
       serverAddr: cfg.host.data,
-      serverPort: parseInt(cfg.port.data, 10),
+      serverPort: validatePort(cfg.port.data),
       password: cfg.password.data,
       method: cfg.method.data,
-      localPort: localPort || 1080,
+      localPort: validatePort(localPort || 1080),
       accessUrl: url
     };
     fs.writeFileSync(configPath, JSON.stringify(finalCfg, null, 2));
@@ -110,6 +118,9 @@ app.post('/start', (req, res) => {
   ];
 
   ssProcess = spawn(localssPath, args, { stdio: 'inherit' });
+  ssProcess.on('error', (err) => {
+    console.error('Failed to start localssjs', err);
+  });
   ssProcess.on('close', (code) => {
     console.log(`localssjs exited with code ${code}`);
     ssProcess = null;
@@ -128,6 +139,6 @@ app.post('/stop', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+app.listen(PORT, '127.0.0.1', () => {
+  console.log(`Server listening on http://127.0.0.1:${PORT}`);
 });

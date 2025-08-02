@@ -22,7 +22,7 @@ npm install
 npm start
 ```
 
-By default the service listens at `http://localhost:3000` and exposes a simple API:
+By default the service listens only on `http://127.0.0.1:3000` and exposes a simple API:
 
 - `POST /configure` &mdash; pass `{url, localPort}` where `url` is a `ss://` or `ssconf://` link
 - `POST /start` &mdash; start the Shadowsocks process
@@ -72,6 +72,28 @@ After editing simply start the server and connect via the extension.
 Modify the files in `src/` and reload the extension in Chrome. The helper server
 can be restarted with `npm start` inside the `server` directory.
 
+Run `npm install` in the project root once to install development tools and
+use `npm run lint` to check the code style.
+
+## Included code
+
+ShadowChrome bundles a small subset of existing Shadowsocks tooling so the server
+can launch a proxy without any additional downloads. The following projects are
+embedded or used as dependencies:
+
+- [`encryptsocks`](https://github.com/oyyd/encryptsocks) (BSD) provides the
+  `localssjs` binary used to run a local Shadowsocks proxy. This package is a
+  modern fork of [`shadowsocks-nodejs`](https://github.com/shadowsocks/shadowsocks-nodejs).
+- [`outline-shadowsocksconfig`](https://github.com/Jigsaw-Code/outline-shadowsocksconfig)
+  (Apache&nbsp;2.0) supplies the parsing logic in `server/shadowsocks_config.js`
+  for handling `ss://` and `ssconf://` configuration URLs.
+
+These components originate from the GitHub organizations
+[shadowsocks](https://github.com/orgs/shadowsocks/repositories?type=all) and
+[Jigsaw-Code](https://github.com/orgs/Jigsaw-Code/repositories?type=all).
+
 ## License
 
-MIT
+The ShadowChrome code is released under the terms of the
+[MIT License](LICENSE). Third‑party components retain their respective
+licenses as noted above.
