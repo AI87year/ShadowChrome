@@ -3,7 +3,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import url from 'url';
-import globby from 'globby';
+import { globby } from 'globby';
 
 function getRootDir() {
   return path.dirname(url.fileURLToPath(import.meta.url));
