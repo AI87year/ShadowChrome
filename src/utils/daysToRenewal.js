@@ -1,14 +1,19 @@
 /**
- * Calculate the number of full days between the current date and a renewal date.
- * If the renewal date is in the past, the result is 0.
+ * Calculates the number of whole days remaining until the renewal date.
+ * Dates are normalised to UTC to avoid daylight‑saving issues.
  *
  * @param {Date} curDate - The current date.
- * @param {string} renewalDate - The renewal date in ISO 8601 format.
- * @returns {number} Days until renewal or 0 if the date has passed.
  */
 export function daysToRenewal(curDate, renewalDate) {
-  const renewalTime = new Date(renewalDate).getTime();
-  const diffMs = renewalTime - curDate.getTime();
-  const dayMs = 24 * 60 * 60 * 1000;
-  return diffMs > 0 ? Math.floor(diffMs / dayMs) : 0;
+const renew = new Date(renewalDate);
+
+const startUtc = Date.UTC(
+curDate.getFullYear(),
+curDate.getMonth(),
+curDate.getDate()
+);
+const endUtc = Date.UTC(renew.getFullYear(), renew.getMonth(), renew.getDate());
+
+const diffDays = Math.floor((endUtc - startUtc) / 86400000);
+return diffDays > 0 ? diffDays : 0;
 }
