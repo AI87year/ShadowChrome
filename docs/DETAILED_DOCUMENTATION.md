@@ -22,12 +22,12 @@ third_party/
 ```
 
 ### `popup.html` / `popup.js`
-Provides a small HTML interface styled entirely with CSS. Users paste an access URL and optionally select a local port. When **Connect** is pressed the popup calls `parseAccessUrl()` and sends the resulting configuration to the background script.
+Provides a small HTML interface styled entirely with CSS. Users paste an access URL and, if multiple servers are offered, select a location. When **Connect** is pressed the popup calls `parseAccessUrl()` and sends the resulting configuration to the background script.
 
 ### `ssConfig.js`
 Exports two helpers:
-- `parseAccessUrl(url)` – accepts both `ss://` and `ssconf://` schemes. The latter is fetched via HTTPS and may return JSON or a bare `ss://` string.
-- `parseSsUrl(url)` – decodes an `ss://` link into `{method, password, host, port}`.
+- `parseAccessUrl(url)` – accepts both `ss://` and `ssconf://` schemes. If the link points to an online subscription the remote document is fetched (via HTTPS) and parsed, returning every advertised server and its tag.
+- `parseSsUrl(url)` – decodes an `ss://` link into `{method, password, host, port}` and preserves the optional `#tag` suffix as `tag`.
 
 ### `background.js`
 Listens for messages from the popup. On `start-proxy` it stores the configuration and sets Chrome's proxy settings to `socks5://127.0.0.1:<localPort>`. On `stop-proxy` it clears the proxy configuration. The TODO section is where the Shadowsocks client will be started and stopped using `chrome.sockets`.
@@ -35,8 +35,8 @@ Listens for messages from the popup. On `start-proxy` it stores the configuratio
 ## Running the Extension
 1. Enable Developer mode at `chrome://extensions/`.
 2. Load the `src` directory as an unpacked extension.
-3. Open the popup, enter your access key and port, and click **Connect**.
-4. Chrome's proxy settings will point to `127.0.0.1:<port>`.
+3. Open the popup, enter your access key, pick a location if prompted, and click **Connect**.
+4. Chrome's proxy settings will point to `127.0.0.1:1080`.
 
 ## Future Work
 - Implement the Shadowsocks client inside `background.js` using JavaScript or WebAssembly and `chrome.sockets`.
