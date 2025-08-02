@@ -22,7 +22,7 @@ npm install
 npm start
 ```
 
-By default the service listens at `http://localhost:3000` and exposes a simple API:
+By default the service listens only on `http://127.0.0.1:3000` and exposes a simple API:
 
 - `POST /configure` &mdash; pass `{url, localPort}` where `url` is a `ss://` or `ssconf://` link
 - `POST /start` &mdash; start the Shadowsocks process
@@ -71,6 +71,9 @@ After editing simply start the server and connect via the extension.
 
 Modify the files in `src/` and reload the extension in Chrome. The helper server
 can be restarted with `npm start` inside the `server` directory.
+
+Run `npm install` in the project root once to install development tools and
+use `npm run lint` to check the code style.
 
 ## Included code
 
