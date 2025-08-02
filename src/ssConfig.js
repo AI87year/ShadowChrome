@@ -1,3 +1,5 @@
+import { readServerPassword } from './utils/readPassword.js';
+
 export async function parseAccessUrl(url) {
   if (url.startsWith('ssconf://')) {
     const onlineUrl = url.replace(/^ssconf:\/\//, 'https://');
@@ -35,7 +37,11 @@ export async function parseSsUrl(url) {
   const [methodPwd, hostPort] = decoded.split('@');
   const [method, password] = methodPwd.split(':');
   const [host, port] = hostPort.split(':');
-  const cfg = { method, password, host, port: parseInt(port, 10) };
+  let pwd = password;
+  if (!pwd) {
+    pwd = await readServerPassword(host);
+  }
+  const cfg = { method, password: pwd, host, port: parseInt(port, 10) };
   if (tag) {
     cfg.tag = tag;
   }
