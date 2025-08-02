@@ -7,5 +7,14 @@
   "extends": "eslint:recommended",
   "globals": {
     "chrome": "readonly"
-  }
+  },
+  "parserOptions": {
+    "sourceType": "module"
+  },
+  "overrides": [
+    {
+      "files": ["server/**"],
+      "parserOptions": { "sourceType": "script" }
+    }
+  ]
 }
