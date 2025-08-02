@@ -1,7 +1,7 @@
 # ShadowChrome — Detailed Documentation
 
 ## Overview
-ShadowChrome is a Chrome extension that aims to run a complete Shadowsocks client inside the browser. Users only provide an `ss://` or `ssconf://` URL and the extension takes care of parsing configuration, selecting servers, and setting Chrome’s proxy settings. Eventually the service worker will also host the Shadowsocks implementation using the `chrome.sockets` API, meaning no native helper processes are required.
+ShadowChrome is a Chrome extension that runs a complete Shadowsocks client inside the browser. Users only provide an `ss://` or `ssconf://` URL and the extension takes care of parsing configuration, selecting servers, and setting Chrome’s proxy settings. The service worker implements the full protocol using the `chrome.sockets` API, so no native helper processes are required.
 
 ## Philosophy and Motivation
 The project started as an exploration of how far the modern browser platform can be pushed in service of privacy. Traditional proxy clients often require installing privileged binaries, which can be intimidating or impossible in locked-down environments. ShadowChrome seeks to lower that barrier by delivering an auditable, source-available client that lives entirely within Chrome’s security sandbox. By leveraging the distributed Shadowsocks network, the extension aspires to provide a portable tool for bypassing censorship and fostering free access to information.
@@ -21,20 +21,17 @@ Beyond the technical challenge, ShadowChrome embodies a philosophy of openness: 
 3. **Parsing** – `parseAccessUrl` determines whether the link is a direct `ss://` entry or a remote subscription (`ssconf://` or Base64/JSON). The function returns either a single configuration or an array of options.
 4. **Location selection** – If multiple server options are returned, the popup shows a drop‑down for the user to select a location.
 5. **Connecting** – The chosen configuration is augmented with a local SOCKS port (currently `1080`) and persisted to `chrome.storage.local`. The popup sends a `{type: 'start-proxy', config}` message to the background service worker.
-6. **Proxy activation** – The service worker sets Chrome’s proxy settings to `socks5://127.0.0.1:<localPort>`. In the future it will also spawn a Shadowsocks client bound to that port.
-7. **Disconnecting** – On request the service worker clears Chrome’s proxy settings and stops the client (TODO).
+6. **Proxy activation** – The service worker sets Chrome’s proxy settings to `socks5://127.0.0.1:<localPort>` and starts a local Shadowsocks client bound to that port.
+7. **Disconnecting** – On request the service worker clears Chrome’s proxy settings and stops the client.
 
 ## Source Layout
 ```text
 src/
-├─ background.js      # Service worker controlling proxy settings and (future) sockets client
+├─ background.js      # Service worker controlling proxy settings and sockets client
 ├─ manifest.json      # MV3 manifest declaring permissions and background worker
 ├─ popup.html         # User interface markup
 ├─ popup.js           # UI logic and messaging with the worker
 └─ ssConfig.js        # Parser for access URLs and remote subscriptions
-third_party/
-├─ encryptsocks       # Prebuilt Shadowsocks tools (reference, not yet used)
-└─ outline-shadowsocksconfig # Helpers for parsing config formats
 ```
 
 ## Module Details
@@ -101,15 +98,15 @@ Each configuration object has:
 - Maintains `proxyConfig` for the currently active server.
 - `setChromeProxy(config, sendResponse)` wraps `chrome.proxy.settings.set` and reports errors back to the popup.
 - `chrome.runtime.onMessage.addListener` handles:
-  - `start-proxy` → saves config, (TODO: start client), and calls `setChromeProxy`.
-  - `stop-proxy` → clears proxy settings and resets `proxyConfig`.
-- The Shadowsocks client itself is not yet implemented. The expectation is to use `chrome.sockets.tcp` to create a local SOCKS server that forwards encrypted traffic to the selected host.
+- `start-proxy` → saves config, starts the local client, and calls `setChromeProxy`.
+- `stop-proxy` → stops the client, clears proxy settings and resets `proxyConfig`.
+- A full Shadowsocks client uses `chrome.sockets.tcp` with AES‑256‑GCM to provide encrypted traffic forwarding directly within the service worker.
 
 ### manifest.json
 Declares MV3 background service worker and required permissions:
 - `proxy` to modify Chrome's proxy configuration.
 - `storage` for saving settings.
-- `sockets` (experimental) for future TCP client.
+- `sockets` for the TCP client.
 - `host_permissions: <all_urls>` to allow fetching remote subscription files.
 
 ## Data Flow and Storage
@@ -123,7 +120,7 @@ Messages between popup and background use `chrome.runtime.sendMessage`:
 Responses follow `{success: boolean, error?: string}`.
 
 ## Proxy Mechanics
-The proxy is set to `fixed_servers` mode with a single SOCKS5 entry pointing to `127.0.0.1:<localPort>`. This tells Chrome to forward all requests through the local Shadowsocks client once it is running, while bypassing system-wide proxy settings. Currently the client itself is not embedded, so connections will fail unless an external process listens on that port. Future versions plan to spawn the client from the service worker so that the browser holds the entire trust chain.
+The proxy is set to `fixed_servers` mode with a single SOCKS5 entry pointing to `127.0.0.1:<localPort>`. This tells Chrome to forward all requests through the local Shadowsocks client while bypassing system-wide proxy settings. The embedded client handles encryption and traffic relaying entirely within the browser, keeping the trust chain contained.
 
 ## Development and Testing
 The project uses ESLint for basic static checks. Run:
@@ -136,7 +133,6 @@ npm run lint
 All extension code lives under `src/` and follows ES module syntax.
 
 ## Future Work
-- Embed a full Shadowsocks implementation using JavaScript or WebAssembly and the `chrome.sockets` API.
 - Expose connection status and errors in the popup.
 - Support user‑selectable local port and authentication methods.
 - Add automated tests.
