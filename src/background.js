@@ -2,6 +2,8 @@ import { browser } from './browser-api.js';
 import ProxyManager from './proxyManager.js';
 import Registry from './registry.js';
 import ServerClient from './serverClient.js';
+import logger from './logger.js';
+import { collectDiagnostics } from './diagnostics.js';
 
 let proxyConfig = null;
 let serverSocketId = null;
@@ -13,6 +15,8 @@ const serverClient = new ServerClient(registry, [
   'https://backup.example.net'
 ]);
 serverClient.scheduleUpdates();
+
+logger.load().then(() => logger.info('Background script initialized'));
 
 browser.storage.onChanged.addListener(async (changes, area) => {
   if (area === 'local' && changes.domainRegistry) {
@@ -122,6 +126,7 @@ async function processRemote(conn) {
 }
 
 function startClient(config, cb) {
+  logger.info('Starting client', { port: config.localPort });
   browser.sockets.tcpServer.create({}, createInfo => {
     serverSocketId = createInfo.socketId;
     browser.sockets.tcpServer.listen(
@@ -130,10 +135,11 @@ function startClient(config, cb) {
       parseInt(config.localPort, 10),
       () => {
         if (browser.runtime.lastError) {
-          console.error('Failed to listen', browser.runtime.lastError);
+          logger.error('Failed to listen', browser.runtime.lastError);
           cb(false, browser.runtime.lastError.message);
           return;
         }
+        logger.info('Listening on 127.0.0.1:' + parseInt(config.localPort, 10));
         browser.sockets.tcpServer.onAccept.addListener(onAccept);
         browser.sockets.tcp.onReceive.addListener(onReceive);
         browser.sockets.tcp.onReceiveError.addListener(onReceiveError);
@@ -165,7 +171,7 @@ function onAccept(info) {
       parseInt(proxyConfig.port, 10),
       () => {
         if (browser.runtime.lastError) {
-          console.error('Remote connect failed', browser.runtime.lastError);
+          logger.error('Remote connect failed', browser.runtime.lastError);
           browser.sockets.tcp.close(conn.clientSocketId);
           browser.sockets.tcp.close(conn.remoteSocketId);
           connections.delete(info.clientSocketId);
@@ -260,6 +266,7 @@ function handleRemoteData(conn, data) {
 }
 
 function stopClient(cb) {
+  logger.info('Stopping client');
   if (serverSocketId === null) {
     cb(true);
     return;
@@ -272,13 +279,14 @@ function stopClient(cb) {
   remoteMap.clear();
   browser.sockets.tcpServer.close(serverSocketId, () => {
     if (browser.runtime.lastError) {
-      console.error('Failed to close server', browser.runtime.lastError);
+      logger.error('Failed to close server', browser.runtime.lastError);
       cb(false, browser.runtime.lastError.message);
     } else {
       browser.sockets.tcpServer.onAccept.removeListener(onAccept);
       browser.sockets.tcp.onReceive.removeListener(onReceive);
       browser.sockets.tcp.onReceiveError.removeListener(onReceiveError);
       serverSocketId = null;
+      logger.info('Server closed');
       cb(true);
     }
   });
@@ -288,6 +296,7 @@ function stopClient(cb) {
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'start-proxy') {
+    logger.info('Start proxy requested');
     proxyConfig = message.config;
     startClient(proxyConfig, (ok, err) => {
       if (!ok) {
@@ -301,6 +310,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   } else if (message.type === 'stop-proxy') {
+    logger.info('Stop proxy requested');
     stopClient((ok, err) => {
       proxyManager
         .disable()
@@ -316,9 +326,16 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   } else if (message.type === 'sync') {
+    logger.info('Sync requested');
     serverClient
       .syncAll()
       .then(() => sendResponse({ success: true }))
+      .catch(e => sendResponse({ success: false, error: e.message }));
+    return true;
+  } else if (message.type === 'get-diagnostics') {
+    logger.info('Diagnostics requested');
+    collectDiagnostics()
+      .then(data => sendResponse({ success: true, data }))
       .catch(e => sendResponse({ success: false, error: e.message }));
     return true;
   }

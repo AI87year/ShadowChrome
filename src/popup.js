@@ -26,7 +26,10 @@ const translations = {
     stopping: 'Stopping...',
     proxyStopped: 'Proxy stopped',
     syncing: 'Syncing...',
-    syncComplete: 'Sync complete'
+    syncComplete: 'Sync complete',
+    diagnostics: 'Diagnostics',
+    collectingDiagnostics: 'Collecting diagnostics...',
+    diagnosticsFailed: 'Diagnostics failed'
   },
   lv: {
     language: 'Valoda',
@@ -47,7 +50,10 @@ const translations = {
     stopping: 'Apstādināšana...',
     proxyStopped: 'Starpniekserveris apstādināts',
     syncing: 'Sinhronizācija...',
-    syncComplete: 'Sinhronizācija pabeigta'
+    syncComplete: 'Sinhronizācija pabeigta',
+    diagnostics: 'Diagnostika',
+    collectingDiagnostics: 'Vāc diagnostiku...',
+    diagnosticsFailed: 'Diagnostika neizdevās'
   },
   be: {
     language: 'Мова',
@@ -68,7 +74,10 @@ const translations = {
     stopping: 'Спыненне...',
     proxyStopped: 'Праксі спынены',
     syncing: 'Сінхранізацыя...',
-    syncComplete: 'Сінхранізацыя завершана'
+    syncComplete: 'Сінхранізацыя завершана',
+    diagnostics: 'Дыягностыка',
+    collectingDiagnostics: 'Збор дыягностыкі...',
+    diagnosticsFailed: 'Дыягностыка не ўдалася'
   },
   de: {
     language: 'Sprache',
@@ -89,7 +98,82 @@ const translations = {
     stopping: 'Wird gestoppt...',
     proxyStopped: 'Proxy gestoppt',
     syncing: 'Synchronisiere...',
-    syncComplete: 'Synchronisierung abgeschlossen'
+    syncComplete: 'Synchronisierung abgeschlossen',
+    diagnostics: 'Diagnose',
+    collectingDiagnostics: 'Sammle Diagnose...',
+    diagnosticsFailed: 'Diagnose fehlgeschlagen'
+  },
+  es: {
+    language: 'Idioma',
+    accessUrl: 'URL de acceso',
+    accessUrlPlaceholder: 'ss:// o ssconf://',
+    location: 'Ubicación',
+    connect: 'Conectar',
+    disconnect: 'Desconectar',
+    sync: 'Sincronizar',
+    proxyDomains: 'Dominios proxy',
+    addDomain: 'Agregar dominio',
+    domainPlaceholder: 'example.com',
+    startingProxy: 'Iniciando proxy...',
+    proxyRunning: 'Proxy en ejecución en 127.0.0.1:1080',
+    error: 'Error: ',
+    selectLocation: 'Selecciona ubicación y pulsa Conectar',
+    failedStart: 'No se pudo iniciar el proxy',
+    stopping: 'Deteniendo...',
+    proxyStopped: 'Proxy detenido',
+    syncing: 'Sincronizando...',
+    syncComplete: 'Sincronización completa',
+    diagnostics: 'Diagnósticos',
+    collectingDiagnostics: 'Recopilando diagnósticos...',
+    diagnosticsFailed: 'Diagnósticos fallidos'
+  },
+  fr: {
+    language: 'Langue',
+    accessUrl: "URL d'accès",
+    accessUrlPlaceholder: 'ss:// ou ssconf://',
+    location: 'Emplacement',
+    connect: 'Connecter',
+    disconnect: 'Déconnecter',
+    sync: 'Synchroniser',
+    proxyDomains: 'Domaines proxy',
+    addDomain: 'Ajouter domaine',
+    domainPlaceholder: 'example.com',
+    startingProxy: 'Démarrage du proxy...',
+    proxyRunning: 'Proxy en cours sur 127.0.0.1:1080',
+    error: 'Erreur: ',
+    selectLocation: 'Choisissez un emplacement et cliquez sur Connecter',
+    failedStart: 'Échec du démarrage du proxy',
+    stopping: 'Arrêt...',
+    proxyStopped: 'Proxy arrêté',
+    syncing: 'Synchronisation...',
+    syncComplete: 'Synchronisation terminée',
+    diagnostics: 'Diagnostics',
+    collectingDiagnostics: 'Collecte des diagnostics...',
+    diagnosticsFailed: 'Échec des diagnostics'
+  },
+  ru: {
+    language: 'Язык',
+    accessUrl: 'URL доступа',
+    accessUrlPlaceholder: 'ss:// или ssconf://',
+    location: 'Расположение',
+    connect: 'Подключить',
+    disconnect: 'Отключить',
+    sync: 'Синхронизировать',
+    proxyDomains: 'Прокси домены',
+    addDomain: 'Добавить домен',
+    domainPlaceholder: 'example.com',
+    startingProxy: 'Запуск прокси...',
+    proxyRunning: 'Прокси работает на 127.0.0.1:1080',
+    error: 'Ошибка: ',
+    selectLocation: 'Выберите расположение и нажмите Подключить',
+    failedStart: 'Не удалось запустить прокси',
+    stopping: 'Остановка...',
+    proxyStopped: 'Прокси остановлен',
+    syncing: 'Синхронизация...',
+    syncComplete: 'Синхронизация завершена',
+    diagnostics: 'Диагностика',
+    collectingDiagnostics: 'Сбор диагностики...',
+    diagnosticsFailed: 'Сбой диагностики'
   }
 };
 
@@ -102,6 +186,7 @@ function applyTranslations() {
   document.getElementById('connect').textContent = t.connect;
   document.getElementById('disconnect').textContent = t.disconnect;
   document.getElementById('sync').textContent = t.sync;
+  document.getElementById('diagnostics-btn').textContent = t.diagnostics;
   document.getElementById('domains-title').textContent = t.proxyDomains;
   document.getElementById('add-domain').textContent = t.addDomain;
   document.getElementById('domain-input').placeholder = t.domainPlaceholder;
@@ -225,6 +310,18 @@ document.getElementById('sync').addEventListener('click', () => {
     } else {
       status.textContent =
         translations[currentLang].error + (response && response.error);
+    }
+  });
+});
+
+document.getElementById('diagnostics-btn').addEventListener('click', () => {
+  const output = document.getElementById('diagnostics-output');
+  output.textContent = translations[currentLang].collectingDiagnostics;
+  browser.runtime.sendMessage({ type: 'get-diagnostics' }, response => {
+    if (response && response.success) {
+      output.textContent = JSON.stringify(response.data, null, 2);
+    } else {
+      output.textContent = translations[currentLang].diagnosticsFailed;
     }
   });
 });
