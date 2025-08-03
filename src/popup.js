@@ -4,12 +4,106 @@ import Registry from './registry.js';
 
 const registry = new Registry();
 let parsedConfigs = null;
+let currentLang = 'en';
+
+const translations = {
+  en: {
+    language: 'Language',
+    accessUrl: 'Access URL',
+    accessUrlPlaceholder: 'ss:// or ssconf://',
+    location: 'Location',
+    connect: 'Connect',
+    disconnect: 'Disconnect',
+    proxyDomains: 'Proxy Domains',
+    addDomain: 'Add Domain',
+    domainPlaceholder: 'example.com',
+    startingProxy: 'Starting proxy...',
+    proxyRunning: 'Proxy running on 127.0.0.1:1080',
+    error: 'Error: ',
+    selectLocation: 'Select location and press Connect',
+    failedStart: 'Failed to start proxy',
+    stopping: 'Stopping...',
+    proxyStopped: 'Proxy stopped'
+  },
+  lv: {
+    language: 'Valoda',
+    accessUrl: 'Piekļuves URL',
+    accessUrlPlaceholder: 'ss:// vai ssconf://',
+    location: 'Atrašanās vieta',
+    connect: 'Pievienoties',
+    disconnect: 'Atvienoties',
+    proxyDomains: 'Starpniekservera domēni',
+    addDomain: 'Pievienot domēnu',
+    domainPlaceholder: 'example.com',
+    startingProxy: 'Startē starpniekserveri...',
+    proxyRunning: 'Starpniekserveris darbojas uz 127.0.0.1:1080',
+    error: 'Kļūda: ',
+    selectLocation: "Izvēlieties atrašanās vietu un nospiediet 'Pievienoties'",
+    failedStart: 'Neizdevās startēt starpniekserveri',
+    stopping: 'Apstādināšana...',
+    proxyStopped: 'Starpniekserveris apstādināts'
+  },
+  be: {
+    language: 'Мова',
+    accessUrl: 'Адрас доступу',
+    accessUrlPlaceholder: 'ss:// або ssconf://',
+    location: 'Месцазнаходжанне',
+    connect: 'Падключыць',
+    disconnect: 'Адключыць',
+    proxyDomains: 'Дамены праксі',
+    addDomain: 'Дадаць дамен',
+    domainPlaceholder: 'example.com',
+    startingProxy: 'Запуск праксі...',
+    proxyRunning: 'Праксі працуе на 127.0.0.1:1080',
+    error: 'Памылка: ',
+    selectLocation: 'Выберыце месцазнаходжанне і націсніце "Падключыць"',
+    failedStart: 'Не атрымалася запусціць праксі',
+    stopping: 'Спыненне...',
+    proxyStopped: 'Праксі спынены'
+  },
+  de: {
+    language: 'Sprache',
+    accessUrl: 'Zugriffs-URL',
+    accessUrlPlaceholder: 'ss:// oder ssconf://',
+    location: 'Standort',
+    connect: 'Verbinden',
+    disconnect: 'Trennen',
+    proxyDomains: 'Proxy-Domains',
+    addDomain: 'Domain hinzufügen',
+    domainPlaceholder: 'example.com',
+    startingProxy: 'Proxy wird gestartet...',
+    proxyRunning: 'Proxy läuft auf 127.0.0.1:1080',
+    error: 'Fehler: ',
+    selectLocation: 'Standort wählen und auf "Verbinden" klicken',
+    failedStart: 'Proxy konnte nicht gestartet werden',
+    stopping: 'Wird gestoppt...',
+    proxyStopped: 'Proxy gestoppt'
+  }
+};
+
+function applyTranslations() {
+  const t = translations[currentLang];
+  document.getElementById('language-label-text').textContent = t.language;
+  document.getElementById('url-label-text').textContent = t.accessUrl;
+  document.getElementById('url').placeholder = t.accessUrlPlaceholder;
+  document.getElementById('location-label-text').textContent = t.location;
+  document.getElementById('connect').textContent = t.connect;
+  document.getElementById('disconnect').textContent = t.disconnect;
+  document.getElementById('domains-title').textContent = t.proxyDomains;
+  document.getElementById('add-domain').textContent = t.addDomain;
+  document.getElementById('domain-input').placeholder = t.domainPlaceholder;
+}
 
 async function loadConfig() {
-  const cfg = await browser.storage.local.get(['accessUrl']);
+  const cfg = await browser.storage.local.get(['accessUrl', 'language']);
   if (cfg.accessUrl) {
     document.getElementById('url').value = cfg.accessUrl;
   }
+  if (cfg.language && translations[cfg.language]) {
+    currentLang = cfg.language;
+    document.getElementById('language').value = currentLang;
+  }
+  applyTranslations();
   renderDomains();
 }
 
@@ -51,11 +145,20 @@ document.getElementById('url').addEventListener('input', () => {
   document.getElementById('location-label').style.display = 'none';
 });
 
+document.getElementById('language').addEventListener('change', (e) => {
+  const lang = e.target.value;
+  if (translations[lang]) {
+    currentLang = lang;
+    browser.storage.local.set({ language: lang });
+    applyTranslations();
+  }
+});
+
 document.getElementById('connect').addEventListener('click', async () => {
   const url = document.getElementById('url').value.trim();
   const status = document.getElementById('status');
   const locSelect = document.getElementById('location');
-  status.textContent = 'Starting proxy...';
+  status.textContent = translations[currentLang].startingProxy;
   try {
     if (parsedConfigs && Array.isArray(parsedConfigs)) {
       const chosen = parsedConfigs[parseInt(locSelect.value, 10)];
@@ -63,9 +166,9 @@ document.getElementById('connect').addEventListener('click', async () => {
       browser.storage.local.set(finalCfg);
       browser.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, (response) => {
         if (response && response.success) {
-          status.textContent = 'Proxy running on 127.0.0.1:1080';
+          status.textContent = translations[currentLang].proxyRunning;
         } else {
-          status.textContent = 'Error: ' + (response && response.error);
+          status.textContent = translations[currentLang].error + (response && response.error);
         }
       });
       return;
@@ -75,28 +178,28 @@ document.getElementById('connect').addEventListener('click', async () => {
     if (Array.isArray(cfg)) {
       parsedConfigs = cfg;
       showLocations(cfg);
-      status.textContent = 'Select location and press Connect';
+      status.textContent = translations[currentLang].selectLocation;
       return;
     }
     const finalCfg = { ...cfg, localPort: 1080, accessUrl: url };
     browser.storage.local.set(finalCfg);
     browser.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, (response) => {
       if (response && response.success) {
-        status.textContent = 'Proxy running on 127.0.0.1:1080';
+        status.textContent = translations[currentLang].proxyRunning;
       } else {
-        status.textContent = 'Error: ' + (response && response.error);
+        status.textContent = translations[currentLang].error + (response && response.error);
       }
     });
   } catch (e) {
-    status.textContent = 'Failed to start proxy';
+    status.textContent = translations[currentLang].failedStart;
   }
 });
 
 document.getElementById('disconnect').addEventListener('click', () => {
   const status = document.getElementById('status');
-  status.textContent = 'Stopping...';
+  status.textContent = translations[currentLang].stopping;
   browser.runtime.sendMessage({ type: 'stop-proxy' }, () => {
-    status.textContent = 'Proxy stopped';
+    status.textContent = translations[currentLang].proxyStopped;
   });
 });
 
