@@ -8,14 +8,33 @@
     label { display: block; margin-top: 5px; }
     input, select { width: 100%; }
     button { margin-top: 10px; width: 100%; }
+    ul { list-style: none; padding: 0; }
+    li { display: flex; justify-content: space-between; margin-top: 4px; }
+    li button { width: auto; margin-top: 0; }
   </style>
 </head>
 <body>
-  <label>Access URL <input id="url" type="text" placeholder="ss:// or ssconf://"></label>
-  <label id="location-label" style="display:none;">Location <select id="location"></select></label>
-  <button id="connect">Connect</button>
-  <button id="disconnect">Disconnect</button>
+  <label id="language-label">
+    <span id="language-label-text"></span>
+    <select id="language"></select>
+  </label>
+  <label id="access-label">
+    <span id="access-label-text"></span>
+    <input id="url" type="text">
+  </label>
+  <label id="location-label" style="display:none;">
+    <span id="location-label-text"></span>
+    <select id="location"></select>
+  </label>
+  <button id="connect"></button>
+  <button id="disconnect"></button>
   <pre id="status"></pre>
+  <section id="domains">
+    <h3 id="domains-heading"></h3>
+    <input id="domain-input" type="text" />
+    <button id="add-domain"></button>
+    <ul id="domain-list"></ul>
+  </section>
   <script type="module" src="popup.js"></script>
 </body>
 </html>
