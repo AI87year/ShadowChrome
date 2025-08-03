@@ -1,12 +1,33 @@
+import { browser } from './browser-api.js';
 import { parseAccessUrl } from './ssConfig.js';
+import Registry from './registry.js';
 
+const registry = new Registry();
 let parsedConfigs = null;
 
-function loadConfig() {
-  chrome.storage.local.get(['accessUrl'], (cfg) => {
-    if (cfg.accessUrl) {
-      document.getElementById('url').value = cfg.accessUrl;
-    }
+async function loadConfig() {
+  const cfg = await browser.storage.local.get(['accessUrl']);
+  if (cfg.accessUrl) {
+    document.getElementById('url').value = cfg.accessUrl;
+  }
+  renderDomains();
+}
+
+async function renderDomains() {
+  const list = await registry.getDomains();
+  const ul = document.getElementById('domain-list');
+  ul.innerHTML = '';
+  list.forEach(d => {
+    const li = document.createElement('li');
+    li.textContent = d;
+    const btn = document.createElement('button');
+    btn.textContent = '✕';
+    btn.addEventListener('click', async () => {
+      await registry.removeDomain(d);
+      renderDomains();
+    });
+    li.appendChild(btn);
+    ul.appendChild(li);
   });
 }
 
@@ -39,8 +60,8 @@ document.getElementById('connect').addEventListener('click', async () => {
     if (parsedConfigs && Array.isArray(parsedConfigs)) {
       const chosen = parsedConfigs[parseInt(locSelect.value, 10)];
       const finalCfg = { ...chosen, localPort: 1080, accessUrl: url };
-      chrome.storage.local.set(finalCfg);
-      chrome.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, (response) => {
+      browser.storage.local.set(finalCfg);
+      browser.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, (response) => {
         if (response && response.success) {
           status.textContent = 'Proxy running on 127.0.0.1:1080';
         } else {
@@ -58,8 +79,8 @@ document.getElementById('connect').addEventListener('click', async () => {
       return;
     }
     const finalCfg = { ...cfg, localPort: 1080, accessUrl: url };
-    chrome.storage.local.set(finalCfg);
-    chrome.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, (response) => {
+    browser.storage.local.set(finalCfg);
+    browser.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, (response) => {
       if (response && response.success) {
         status.textContent = 'Proxy running on 127.0.0.1:1080';
       } else {
@@ -74,7 +95,14 @@ document.getElementById('connect').addEventListener('click', async () => {
 document.getElementById('disconnect').addEventListener('click', () => {
   const status = document.getElementById('status');
   status.textContent = 'Stopping...';
-  chrome.runtime.sendMessage({ type: 'stop-proxy' }, () => {
+  browser.runtime.sendMessage({ type: 'stop-proxy' }, () => {
     status.textContent = 'Proxy stopped';
   });
+});
+
+document.getElementById('add-domain').addEventListener('click', async () => {
+  const input = document.getElementById('domain-input');
+  await registry.addDomain(input.value);
+  input.value = '';
+  renderDomains();
 });

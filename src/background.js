@@ -1,5 +1,25 @@
+import { browser } from './browser-api.js';
+import ProxyManager from './proxyManager.js';
+import Registry from './registry.js';
+import ServerClient from './serverClient.js';
+
 let proxyConfig = null;
 let serverSocketId = null;
+
+const registry = new Registry();
+const proxyManager = new ProxyManager(registry);
+const serverClient = new ServerClient(registry, [
+  'https://config.example.com',
+  'https://backup.example.net'
+]);
+serverClient.scheduleUpdates();
+
+browser.storage.onChanged.addListener(async (changes, area) => {
+  if (area === 'local' && changes.domainRegistry) {
+    const port = proxyConfig ? proxyConfig.localPort : 1080;
+    await proxyManager.refresh(port);
+  }
+});
 
 // Per-connection state keyed by client socket id
 const connections = new Map();
@@ -79,7 +99,7 @@ async function encryptAndSend(conn, data) {
     const encLen = await encrypt(conn.outKey, conn.outNonce++, lenBuf);
     const encData = await encrypt(conn.outKey, conn.outNonce++, chunk);
     const payload = concatUint8(encLen, encData);
-    chrome.sockets.tcp.send(conn.remoteSocketId, payload.buffer, () => {});
+    browser.sockets.tcp.send(conn.remoteSocketId, payload.buffer, () => {});
     offset += size;
   }
 }
@@ -97,26 +117,26 @@ async function processRemote(conn) {
     );
     conn.remoteBuffer = conn.remoteBuffer.slice(2 + TAG_LENGTH + len + TAG_LENGTH);
     const data = await decrypt(conn.inKey, conn.inNonce++, encData);
-    chrome.sockets.tcp.send(conn.clientSocketId, data.buffer, () => {});
+    browser.sockets.tcp.send(conn.clientSocketId, data.buffer, () => {});
   }
 }
 
 function startClient(config, cb) {
-  chrome.sockets.tcpServer.create({}, createInfo => {
+  browser.sockets.tcpServer.create({}, createInfo => {
     serverSocketId = createInfo.socketId;
-    chrome.sockets.tcpServer.listen(
+    browser.sockets.tcpServer.listen(
       serverSocketId,
       '127.0.0.1',
       parseInt(config.localPort, 10),
       () => {
-        if (chrome.runtime.lastError) {
-          console.error('Failed to listen', chrome.runtime.lastError);
-          cb(false, chrome.runtime.lastError.message);
+        if (browser.runtime.lastError) {
+          console.error('Failed to listen', browser.runtime.lastError);
+          cb(false, browser.runtime.lastError.message);
           return;
         }
-        chrome.sockets.tcpServer.onAccept.addListener(onAccept);
-        chrome.sockets.tcp.onReceive.addListener(onReceive);
-        chrome.sockets.tcp.onReceiveError.addListener(onReceiveError);
+        browser.sockets.tcpServer.onAccept.addListener(onAccept);
+        browser.sockets.tcp.onReceive.addListener(onReceive);
+        browser.sockets.tcp.onReceiveError.addListener(onReceiveError);
         cb(true);
       }
     );
@@ -136,22 +156,22 @@ function onAccept(info) {
     remoteBuffer: new Uint8Array(0)
   };
   connections.set(info.clientSocketId, conn);
-  chrome.sockets.tcp.create({}, createInfo => {
+  browser.sockets.tcp.create({}, createInfo => {
     conn.remoteSocketId = createInfo.socketId;
     remoteMap.set(conn.remoteSocketId, conn);
-    chrome.sockets.tcp.connect(
+    browser.sockets.tcp.connect(
       conn.remoteSocketId,
       proxyConfig.host,
       parseInt(proxyConfig.port, 10),
       () => {
-        if (chrome.runtime.lastError) {
-          console.error('Remote connect failed', chrome.runtime.lastError);
-          chrome.sockets.tcp.close(conn.clientSocketId);
-          chrome.sockets.tcp.close(conn.remoteSocketId);
+        if (browser.runtime.lastError) {
+          console.error('Remote connect failed', browser.runtime.lastError);
+          browser.sockets.tcp.close(conn.clientSocketId);
+          browser.sockets.tcp.close(conn.remoteSocketId);
           connections.delete(info.clientSocketId);
           remoteMap.delete(conn.remoteSocketId);
         } else {
-          chrome.sockets.tcp.setPaused(info.clientSocketId, false);
+          browser.sockets.tcp.setPaused(info.clientSocketId, false);
         }
       }
     );
@@ -169,8 +189,8 @@ function onReceive(info) {
 function onReceiveError(info) {
   const conn = connections.get(info.socketId) || remoteMap.get(info.socketId);
   if (conn) {
-    chrome.sockets.tcp.close(conn.clientSocketId);
-    chrome.sockets.tcp.close(conn.remoteSocketId);
+    browser.sockets.tcp.close(conn.clientSocketId);
+    browser.sockets.tcp.close(conn.remoteSocketId);
     connections.delete(conn.clientSocketId);
     remoteMap.delete(conn.remoteSocketId);
   }
@@ -178,7 +198,7 @@ function onReceiveError(info) {
 
 function handleClientData(conn, data) {
   if (conn.stage === 'init') {
-    chrome.sockets.tcp.send(
+    browser.sockets.tcp.send(
       conn.clientSocketId,
       new Uint8Array([5, 0]).buffer,
       () => {}
@@ -201,11 +221,11 @@ function handleClientData(conn, data) {
     const extra = data.slice(offset + 2);
 
     const resp = new Uint8Array([5, 0, 0, 1, 0, 0, 0, 0, 0, 0]);
-    chrome.sockets.tcp.send(conn.clientSocketId, resp.buffer, () => {});
+    browser.sockets.tcp.send(conn.clientSocketId, resp.buffer, () => {});
 
     const salt = crypto.getRandomValues(new Uint8Array(32));
     const password = new TextEncoder().encode(proxyConfig.password);
-    chrome.sockets.tcp.send(conn.remoteSocketId, salt.buffer, () => {
+    browser.sockets.tcp.send(conn.remoteSocketId, salt.buffer, () => {
       deriveKey(password, salt).then(key => {
         conn.outKey = key;
         conn.outNonce = 0n;
@@ -245,48 +265,28 @@ function stopClient(cb) {
     return;
   }
   connections.forEach(conn => {
-    chrome.sockets.tcp.close(conn.clientSocketId);
-    chrome.sockets.tcp.close(conn.remoteSocketId);
+    browser.sockets.tcp.close(conn.clientSocketId);
+    browser.sockets.tcp.close(conn.remoteSocketId);
   });
   connections.clear();
   remoteMap.clear();
-  chrome.sockets.tcpServer.close(serverSocketId, () => {
-    if (chrome.runtime.lastError) {
-      console.error('Failed to close server', chrome.runtime.lastError);
-      cb(false, chrome.runtime.lastError.message);
+  browser.sockets.tcpServer.close(serverSocketId, () => {
+    if (browser.runtime.lastError) {
+      console.error('Failed to close server', browser.runtime.lastError);
+      cb(false, browser.runtime.lastError.message);
     } else {
-      chrome.sockets.tcpServer.onAccept.removeListener(onAccept);
-      chrome.sockets.tcp.onReceive.removeListener(onReceive);
-      chrome.sockets.tcp.onReceiveError.removeListener(onReceiveError);
+      browser.sockets.tcpServer.onAccept.removeListener(onAccept);
+      browser.sockets.tcp.onReceive.removeListener(onReceive);
+      browser.sockets.tcp.onReceiveError.removeListener(onReceiveError);
       serverSocketId = null;
       cb(true);
     }
   });
 }
 
-function setChromeProxy(config, sendResponse) {
-  chrome.proxy.settings.set({
-    value: {
-      mode: 'fixed_servers',
-      rules: {
-        singleProxy: {
-          scheme: 'socks5',
-          host: '127.0.0.1',
-          port: parseInt(config.localPort, 10)
-        }
-      }
-    }
-  }, () => {
-    if (chrome.runtime.lastError) {
-      console.error('Failed to set proxy', chrome.runtime.lastError);
-      sendResponse({ success: false, error: chrome.runtime.lastError.message });
-    } else {
-      sendResponse({ success: true });
-    }
-  });
-}
+// ProxyManager handles PAC generation and proxy settings
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'start-proxy') {
     proxyConfig = message.config;
     startClient(proxyConfig, (ok, err) => {
@@ -294,22 +294,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: false, error: err });
         return;
       }
-      setChromeProxy(proxyConfig, sendResponse);
+      proxyManager
+        .enable(proxyConfig.localPort)
+        .then(() => sendResponse({ success: true }))
+        .catch(e => sendResponse({ success: false, error: e.message }));
     });
     return true;
   } else if (message.type === 'stop-proxy') {
     stopClient((ok, err) => {
-      chrome.proxy.settings.clear({}, () => {
-        if (chrome.runtime.lastError) {
-          console.error('Failed to clear proxy', chrome.runtime.lastError);
-          sendResponse({ success: false, error: chrome.runtime.lastError.message });
-        } else if (!ok) {
-          sendResponse({ success: false, error: err });
-        } else {
-          proxyConfig = null;
-          sendResponse({ success: true });
-        }
-      });
+      proxyManager
+        .disable()
+        .then(() => {
+          if (!ok) {
+            sendResponse({ success: false, error: err });
+          } else {
+            proxyConfig = null;
+            sendResponse({ success: true });
+          }
+        })
+        .catch(e => sendResponse({ success: false, error: e.message }));
     });
     return true;
   }
