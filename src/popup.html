@@ -14,13 +14,19 @@
   </style>
 </head>
 <body>
-  <label>Access URL <input id="url" type="text" placeholder="ss:// or ssconf://"></label>
-  <label id="location-label" style="display:none;">Location <select id="location"></select></label>
+  <label id="language-wrapper"><span id="language-label-text">Language</span> <select id="language">
+    <option value="en">🇺🇸 English</option>
+    <option value="lv">🇱🇻 Latviešu</option>
+    <option value="be">🇧🇾 Беларуская</option>
+    <option value="de">🇩🇪 Deutsch</option>
+  </select></label>
+  <label><span id="url-label-text">Access URL</span> <input id="url" type="text" placeholder="ss:// or ssconf://"></label>
+  <label id="location-label" style="display:none;"><span id="location-label-text">Location</span> <select id="location"></select></label>
   <button id="connect">Connect</button>
   <button id="disconnect">Disconnect</button>
   <pre id="status"></pre>
   <section id="domains">
-    <h3>Proxy Domains</h3>
+    <h3 id="domains-title">Proxy Domains</h3>
     <input id="domain-input" type="text" placeholder="example.com" />
     <button id="add-domain">Add Domain</button>
     <ul id="domain-list"></ul>
