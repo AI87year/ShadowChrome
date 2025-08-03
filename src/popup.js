@@ -14,6 +14,7 @@ const translations = {
     location: 'Location',
     connect: 'Connect',
     disconnect: 'Disconnect',
+    sync: 'Sync',
     proxyDomains: 'Proxy Domains',
     addDomain: 'Add Domain',
     domainPlaceholder: 'example.com',
@@ -23,7 +24,9 @@ const translations = {
     selectLocation: 'Select location and press Connect',
     failedStart: 'Failed to start proxy',
     stopping: 'Stopping...',
-    proxyStopped: 'Proxy stopped'
+    proxyStopped: 'Proxy stopped',
+    syncing: 'Syncing...',
+    syncComplete: 'Sync complete'
   },
   lv: {
     language: 'Valoda',
@@ -32,6 +35,7 @@ const translations = {
     location: 'Atrašanās vieta',
     connect: 'Pievienoties',
     disconnect: 'Atvienoties',
+    sync: 'Sinhronizēt',
     proxyDomains: 'Starpniekservera domēni',
     addDomain: 'Pievienot domēnu',
     domainPlaceholder: 'example.com',
@@ -41,7 +45,9 @@ const translations = {
     selectLocation: "Izvēlieties atrašanās vietu un nospiediet 'Pievienoties'",
     failedStart: 'Neizdevās startēt starpniekserveri',
     stopping: 'Apstādināšana...',
-    proxyStopped: 'Starpniekserveris apstādināts'
+    proxyStopped: 'Starpniekserveris apstādināts',
+    syncing: 'Sinhronizācija...',
+    syncComplete: 'Sinhronizācija pabeigta'
   },
   be: {
     language: 'Мова',
@@ -50,6 +56,7 @@ const translations = {
     location: 'Месцазнаходжанне',
     connect: 'Падключыць',
     disconnect: 'Адключыць',
+    sync: 'Сінхранізаваць',
     proxyDomains: 'Дамены праксі',
     addDomain: 'Дадаць дамен',
     domainPlaceholder: 'example.com',
@@ -59,7 +66,9 @@ const translations = {
     selectLocation: 'Выберыце месцазнаходжанне і націсніце "Падключыць"',
     failedStart: 'Не атрымалася запусціць праксі',
     stopping: 'Спыненне...',
-    proxyStopped: 'Праксі спынены'
+    proxyStopped: 'Праксі спынены',
+    syncing: 'Сінхранізацыя...',
+    syncComplete: 'Сінхранізацыя завершана'
   },
   de: {
     language: 'Sprache',
@@ -68,6 +77,7 @@ const translations = {
     location: 'Standort',
     connect: 'Verbinden',
     disconnect: 'Trennen',
+    sync: 'Synchronisieren',
     proxyDomains: 'Proxy-Domains',
     addDomain: 'Domain hinzufügen',
     domainPlaceholder: 'example.com',
@@ -77,7 +87,9 @@ const translations = {
     selectLocation: 'Standort wählen und auf "Verbinden" klicken',
     failedStart: 'Proxy konnte nicht gestartet werden',
     stopping: 'Wird gestoppt...',
-    proxyStopped: 'Proxy gestoppt'
+    proxyStopped: 'Proxy gestoppt',
+    syncing: 'Synchronisiere...',
+    syncComplete: 'Synchronisierung abgeschlossen'
   }
 };
 
@@ -89,6 +101,7 @@ function applyTranslations() {
   document.getElementById('location-label-text').textContent = t.location;
   document.getElementById('connect').textContent = t.connect;
   document.getElementById('disconnect').textContent = t.disconnect;
+  document.getElementById('sync').textContent = t.sync;
   document.getElementById('domains-title').textContent = t.proxyDomains;
   document.getElementById('add-domain').textContent = t.addDomain;
   document.getElementById('domain-input').placeholder = t.domainPlaceholder;
@@ -200,6 +213,19 @@ document.getElementById('disconnect').addEventListener('click', () => {
   status.textContent = translations[currentLang].stopping;
   browser.runtime.sendMessage({ type: 'stop-proxy' }, () => {
     status.textContent = translations[currentLang].proxyStopped;
+  });
+});
+
+document.getElementById('sync').addEventListener('click', () => {
+  const status = document.getElementById('status');
+  status.textContent = translations[currentLang].syncing;
+  browser.runtime.sendMessage({ type: 'sync' }, response => {
+    if (response && response.success) {
+      status.textContent = translations[currentLang].syncComplete;
+    } else {
+      status.textContent =
+        translations[currentLang].error + (response && response.error);
+    }
   });
 });
 
