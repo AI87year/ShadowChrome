@@ -16,5 +16,11 @@ The instructions in this file apply to the entire repository.
 - Write concise commit messages in the imperative mood (e.g., "Add feature" not "Added feature").
 - Commit messages should be in English.
 
+## Code style
+- Use two spaces for indentation.
+- Use single quotes for strings.
+- Always terminate statements with semicolons.
+- Prefer descriptive names for variables and functions.
+
 ## Testing
 - `npm run lint` is currently the only automated check; run it after every change and include its results in the PR description.

@@ -19,13 +19,18 @@
     <option value="lv">🇱🇻 Latviešu</option>
     <option value="be">🇧🇾 Беларуская</option>
     <option value="de">🇩🇪 Deutsch</option>
+    <option value="es">🇪🇸 Español</option>
+    <option value="fr">🇫🇷 Français</option>
+    <option value="ru">🇷🇺 Русский</option>
   </select></label>
   <label><span id="url-label-text">Access URL</span> <input id="url" type="text" placeholder="ss:// or ssconf://"></label>
   <label id="location-label" style="display:none;"><span id="location-label-text">Location</span> <select id="location"></select></label>
   <button id="connect">Connect</button>
   <button id="disconnect">Disconnect</button>
   <button id="sync">Sync</button>
+  <button id="diagnostics-btn">Diagnostics</button>
   <pre id="status"></pre>
+  <pre id="diagnostics-output"></pre>
   <section id="domains">
     <h3 id="domains-title">Proxy Domains</h3>
     <input id="domain-input" type="text" placeholder="example.com" />
