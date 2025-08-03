@@ -1,4 +1,5 @@
 import { browser } from './browser-api.js';
+import { withTimeout } from './utils/withTimeout.js';
 
 export default class ServerClient {
   constructor(registry, mirrors = []) {
@@ -7,10 +8,13 @@ export default class ServerClient {
     this.alarmName = 'shadowchrome-sync';
   }
 
-  async fetchFromMirrors(path) {
+  async fetchFromMirrors(path, timeoutMs = 5000) {
     for (const base of this.mirrors) {
       try {
-        const resp = await fetch(base + path, { cache: 'no-store' });
+        const resp = await withTimeout(
+          fetch(base + path, { cache: 'no-store' }),
+          timeoutMs
+        );
         if (resp.ok) {
           return await resp.json();
         }
@@ -41,6 +45,10 @@ export default class ServerClient {
     } catch (e) {
       console.warn('Config update failed', e);
     }
+  }
+
+  async syncAll() {
+    await Promise.all([this.updateRegistry(), this.updateConfig()]);
   }
 
   scheduleUpdates() {

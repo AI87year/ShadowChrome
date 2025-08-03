@@ -315,5 +315,11 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         .catch(e => sendResponse({ success: false, error: e.message }));
     });
     return true;
+  } else if (message.type === 'sync') {
+    serverClient
+      .syncAll()
+      .then(() => sendResponse({ success: true }))
+      .catch(e => sendResponse({ success: false, error: e.message }));
+    return true;
   }
 });
