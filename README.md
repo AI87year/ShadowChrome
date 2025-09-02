@@ -2,7 +2,7 @@
 
 ShadowChrome is an ambitious experiment to create a secure communication channel directly inside the browser. The extension consumes a single `ss://` or `ssconf://` key, contacts the public Shadowsocks ecosystem to discover available endpoints, and then performs all remaining work within Chrome. By avoiding native helpers and relying solely on the MV3 environment, ShadowChrome aims to make encrypted browsing transparent, portable and easy to audit.
 
-The project itself is authored by artificial intelligence. It explores a zero‑coding workflow where detailed technical descriptions are translated directly into working code, allowing complex programs to be assembled without manual implementation.
+The project itself is authored by artificial intelligence. In 2025 its code generation is powered by GPT‑5, exploring a zero‑coding workflow where detailed technical descriptions are translated directly into working code, allowing complex programs to be assembled without manual implementation.
 
 > **Status:** The legacy Node.js helper server has been removed. The service worker parses configuration links, configures Chrome's proxy settings and now hosts a fully functional `chrome.sockets` Shadowsocks client with AES‑256‑GCM encryption.
 
