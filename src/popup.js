@@ -22,15 +22,7 @@ const translations = {
     sync: 'Sync',
     proxyDomains: 'Proxy Domains',
     addDomain: 'Add Domain',
-      domainPlaceholder: 'example.com',
-      savedServers: 'Saved Servers',
-      outlineManagers: 'Outline Managers',
-      addManager: 'Add Manager',
-      apiUrlPlaceholder: 'https://example.com',
-      certPlaceholder: 'Cert SHA256',
-      use: 'Use',
-      remove: 'Remove',
-      startingProxy: 'Starting proxy...',
+
     proxyRunning: 'Proxy running on 127.0.0.1:1080',
     error: 'Error: ',
     selectLocation: 'Select location and press Connect',
@@ -53,15 +45,7 @@ const translations = {
     sync: 'Sinhronizēt',
     proxyDomains: 'Starpniekservera domēni',
     addDomain: 'Pievienot domēnu',
-      domainPlaceholder: 'example.com',
-      savedServers: 'Saglabātie serveri',
-      outlineManagers: 'Outline pārvaldnieki',
-      addManager: 'Pievienot pārvaldnieku',
-      apiUrlPlaceholder: 'https://example.com',
-      certPlaceholder: 'Sert. SHA256',
-      use: 'Izmantot',
-      remove: 'Noņemt',
-      startingProxy: 'Startē starpniekserveri...',
+
     proxyRunning: 'Starpniekserveris darbojas uz 127.0.0.1:1080',
     error: 'Kļūda: ',
     selectLocation: "Izvēlieties atrašanās vietu un nospiediet 'Pievienoties'",
@@ -84,15 +68,7 @@ const translations = {
     sync: 'Сінхранізаваць',
     proxyDomains: 'Дамены праксі',
     addDomain: 'Дадаць дамен',
-      domainPlaceholder: 'example.com',
-      savedServers: 'Захаваныя серверы',
-      outlineManagers: 'Кіраўнікі Outline',
-      addManager: 'Дадаць кіраўніка',
-      apiUrlPlaceholder: 'https://example.com',
-      certPlaceholder: 'Сертыфікат SHA256',
-      use: 'Выкарыстаць',
-      remove: 'Выдаліць',
-      startingProxy: 'Запуск праксі...',
+
     proxyRunning: 'Праксі працуе на 127.0.0.1:1080',
     error: 'Памылка: ',
     selectLocation: 'Выберыце месцазнаходжанне і націсніце "Падключыць"',
@@ -115,15 +91,7 @@ const translations = {
     sync: 'Synchronisieren',
     proxyDomains: 'Proxy-Domains',
     addDomain: 'Domain hinzufügen',
-      domainPlaceholder: 'example.com',
-      savedServers: 'Gespeicherte Server',
-      outlineManagers: 'Outline-Manager',
-      addManager: 'Manager hinzufügen',
-      apiUrlPlaceholder: 'https://example.com',
-      certPlaceholder: 'Zertifikat SHA256',
-      use: 'Verwenden',
-      remove: 'Entfernen',
-      startingProxy: 'Proxy wird gestartet...',
+
     proxyRunning: 'Proxy läuft auf 127.0.0.1:1080',
     error: 'Fehler: ',
     selectLocation: 'Standort wählen und auf "Verbinden" klicken',
@@ -146,15 +114,7 @@ const translations = {
     sync: 'Sincronizar',
     proxyDomains: 'Dominios proxy',
     addDomain: 'Agregar dominio',
-      domainPlaceholder: 'example.com',
-      savedServers: 'Servidores guardados',
-      outlineManagers: 'Administradores Outline',
-      addManager: 'Agregar administrador',
-      apiUrlPlaceholder: 'https://example.com',
-      certPlaceholder: 'Certificado SHA256',
-      use: 'Usar',
-      remove: 'Eliminar',
-      startingProxy: 'Iniciando proxy...',
+
     proxyRunning: 'Proxy en ejecución en 127.0.0.1:1080',
     error: 'Error: ',
     selectLocation: 'Selecciona ubicación y pulsa Conectar',
@@ -177,15 +137,7 @@ const translations = {
     sync: 'Synchroniser',
     proxyDomains: 'Domaines proxy',
     addDomain: 'Ajouter domaine',
-      domainPlaceholder: 'example.com',
-      savedServers: 'Serveurs enregistrés',
-      outlineManagers: 'Gestionnaires Outline',
-      addManager: 'Ajouter gestionnaire',
-      apiUrlPlaceholder: 'https://example.com',
-      certPlaceholder: 'Certificat SHA256',
-      use: 'Utiliser',
-      remove: 'Supprimer',
-      startingProxy: 'Démarrage du proxy...',
+
     proxyRunning: 'Proxy en cours sur 127.0.0.1:1080',
     error: 'Erreur: ',
     selectLocation: 'Choisissez un emplacement et cliquez sur Connecter',
@@ -208,15 +160,7 @@ const translations = {
     sync: 'Синхронизировать',
     proxyDomains: 'Прокси домены',
     addDomain: 'Добавить домен',
-      domainPlaceholder: 'example.com',
-      savedServers: 'Сохранённые серверы',
-      outlineManagers: 'Менеджеры Outline',
-      addManager: 'Добавить менеджер',
-      apiUrlPlaceholder: 'https://example.com',
-      certPlaceholder: 'Сертификат SHA256',
-      use: 'Использовать',
-      remove: 'Удалить',
-      startingProxy: 'Запуск прокси...',
+
     proxyRunning: 'Прокси работает на 127.0.0.1:1080',
     error: 'Ошибка: ',
     selectLocation: 'Выберите расположение и нажмите Подключить',
@@ -245,10 +189,7 @@ function applyTranslations() {
   document.getElementById('add-domain').textContent = t.addDomain;
   document.getElementById('domain-input').placeholder = t.domainPlaceholder;
   document.getElementById('servers-title').textContent = t.savedServers;
-  document.getElementById('managers-title').textContent = t.outlineManagers;
-  document.getElementById('add-manager').textContent = t.addManager;
-  document.getElementById('manager-url').placeholder = t.apiUrlPlaceholder;
-  document.getElementById('manager-cert').placeholder = t.certPlaceholder;
+
 }
 
 async function loadConfig() {
@@ -263,7 +204,7 @@ async function loadConfig() {
   applyTranslations();
   renderDomains();
   renderServers();
-  renderManagers();
+
 }
 
 async function renderDomains() {
@@ -309,26 +250,7 @@ async function renderServers() {
     ul.appendChild(li);
   });
 }
-async function renderManagers() {
-  const resp = await browser.runtime.sendMessage({ type: 'list-managers' });
-  if (!resp || !resp.success) return;
-  const ul = document.getElementById('manager-list');
-  ul.innerHTML = '';
-  resp.list.forEach(m => {
-    const li = document.createElement('li');
-    const span = document.createElement('span');
-    span.textContent = m.apiUrl;
-    const delBtn = document.createElement('button');
-    delBtn.textContent = '✕';
-    delBtn.addEventListener('click', async () => {
-      await browser.runtime.sendMessage({ type: 'remove-manager', apiUrl: m.apiUrl });
-      renderManagers();
-    });
-    li.appendChild(span);
-    li.appendChild(delBtn);
-    ul.appendChild(li);
-  });
-}
+
 function connectToServer(server) {
   const status = document.getElementById('status');
   status.textContent = translations[currentLang].startingProxy;
@@ -370,7 +292,7 @@ document.getElementById('language').addEventListener('change', (e) => {
     browser.storage.local.set({ language: lang });
     applyTranslations();
     renderServers();
-    renderManagers();
+
   }
 });
 

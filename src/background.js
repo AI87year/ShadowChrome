@@ -365,24 +365,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(() => sendResponse({ success: true }))
       .catch(e => sendResponse({ success: false, error: e.message }));
     return true;
-  } else if (message.type === 'list-managers') {
-    outlineManager
-      .listManagers()
-      .then(list => sendResponse({ success: true, list }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'remove-manager') {
-    outlineManager
-      .removeManager(message.apiUrl)
-      .then(() => sendResponse({ success: true }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'sync-outline') {
-    outlineManager
-      .syncAll()
-      .then(() => sendResponse({ success: true }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
+
   } else if (message.type === 'remove-server') {
     serverStore
       .remove(message.id)
