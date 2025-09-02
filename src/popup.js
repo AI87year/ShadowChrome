@@ -1,8 +1,13 @@
 import { browser } from './browser-api.js';
 import { parseAccessUrl } from './ssConfig.js';
 import Registry from './registry.js';
+import ServerStore from './serverStore.js';
 
 const registry = new Registry();
+const serverStore = new ServerStore();
+serverStore.onChange(() => {
+  renderServers();
+});
 let parsedConfigs = null;
 let currentLang = 'en';
 
@@ -18,6 +23,13 @@ const translations = {
     proxyDomains: 'Proxy Domains',
     addDomain: 'Add Domain',
     domainPlaceholder: 'example.com',
+    savedServers: 'Saved Servers',
+    outlineManagers: 'Outline Managers',
+    addManager: 'Add Manager',
+    apiUrlPlaceholder: 'https://example.com',
+    certPlaceholder: 'Cert SHA256',
+    use: 'Use',
+    remove: 'Remove',
     startingProxy: 'Starting proxy...',
     proxyRunning: 'Proxy running on 127.0.0.1:1080',
     error: 'Error: ',
@@ -42,6 +54,13 @@ const translations = {
     proxyDomains: 'Starpniekservera domēni',
     addDomain: 'Pievienot domēnu',
     domainPlaceholder: 'example.com',
+    savedServers: 'Saglabātie serveri',
+    outlineManagers: 'Outline pārvaldnieki',
+    addManager: 'Pievienot pārvaldnieku',
+    apiUrlPlaceholder: 'https://example.com',
+    certPlaceholder: 'Sert. SHA256',
+    use: 'Izmantot',
+    remove: 'Noņemt',
     startingProxy: 'Startē starpniekserveri...',
     proxyRunning: 'Starpniekserveris darbojas uz 127.0.0.1:1080',
     error: 'Kļūda: ',
@@ -66,6 +85,13 @@ const translations = {
     proxyDomains: 'Дамены праксі',
     addDomain: 'Дадаць дамен',
     domainPlaceholder: 'example.com',
+    savedServers: 'Захаваныя серверы',
+    outlineManagers: 'Кіраўнікі Outline',
+    addManager: 'Дадаць кіраўніка',
+    apiUrlPlaceholder: 'https://example.com',
+    certPlaceholder: 'Сертыфікат SHA256',
+    use: 'Выкарыстаць',
+    remove: 'Выдаліць',
     startingProxy: 'Запуск праксі...',
     proxyRunning: 'Праксі працуе на 127.0.0.1:1080',
     error: 'Памылка: ',
@@ -90,6 +116,13 @@ const translations = {
     proxyDomains: 'Proxy-Domains',
     addDomain: 'Domain hinzufügen',
     domainPlaceholder: 'example.com',
+    savedServers: 'Gespeicherte Server',
+    outlineManagers: 'Outline-Manager',
+    addManager: 'Manager hinzufügen',
+    apiUrlPlaceholder: 'https://example.com',
+    certPlaceholder: 'Zertifikat SHA256',
+    use: 'Verwenden',
+    remove: 'Entfernen',
     startingProxy: 'Proxy wird gestartet...',
     proxyRunning: 'Proxy läuft auf 127.0.0.1:1080',
     error: 'Fehler: ',
@@ -114,6 +147,13 @@ const translations = {
     proxyDomains: 'Dominios proxy',
     addDomain: 'Agregar dominio',
     domainPlaceholder: 'example.com',
+    savedServers: 'Servidores guardados',
+    outlineManagers: 'Administradores Outline',
+    addManager: 'Agregar administrador',
+    apiUrlPlaceholder: 'https://example.com',
+    certPlaceholder: 'Certificado SHA256',
+    use: 'Usar',
+    remove: 'Eliminar',
     startingProxy: 'Iniciando proxy...',
     proxyRunning: 'Proxy en ejecución en 127.0.0.1:1080',
     error: 'Error: ',
@@ -138,6 +178,13 @@ const translations = {
     proxyDomains: 'Domaines proxy',
     addDomain: 'Ajouter domaine',
     domainPlaceholder: 'example.com',
+    savedServers: 'Serveurs enregistrés',
+    outlineManagers: 'Gestionnaires Outline',
+    addManager: 'Ajouter gestionnaire',
+    apiUrlPlaceholder: 'https://example.com',
+    certPlaceholder: 'Certificat SHA256',
+    use: 'Utiliser',
+    remove: 'Supprimer',
     startingProxy: 'Démarrage du proxy...',
     proxyRunning: 'Proxy en cours sur 127.0.0.1:1080',
     error: 'Erreur: ',
@@ -162,6 +209,13 @@ const translations = {
     proxyDomains: 'Прокси домены',
     addDomain: 'Добавить домен',
     domainPlaceholder: 'example.com',
+    savedServers: 'Сохранённые серверы',
+    outlineManagers: 'Менеджеры Outline',
+    addManager: 'Добавить менеджер',
+    apiUrlPlaceholder: 'https://example.com',
+    certPlaceholder: 'Сертификат SHA256',
+    use: 'Использовать',
+    remove: 'Удалить',
     startingProxy: 'Запуск прокси...',
     proxyRunning: 'Прокси работает на 127.0.0.1:1080',
     error: 'Ошибка: ',
@@ -190,6 +244,11 @@ function applyTranslations() {
   document.getElementById('domains-title').textContent = t.proxyDomains;
   document.getElementById('add-domain').textContent = t.addDomain;
   document.getElementById('domain-input').placeholder = t.domainPlaceholder;
+  document.getElementById('servers-title').textContent = t.savedServers;
+  document.getElementById('managers-title').textContent = t.outlineManagers;
+  document.getElementById('add-manager').textContent = t.addManager;
+  document.getElementById('manager-url').placeholder = t.apiUrlPlaceholder;
+  document.getElementById('manager-cert').placeholder = t.certPlaceholder;
 }
 
 async function loadConfig() {
@@ -203,6 +262,8 @@ async function loadConfig() {
   }
   applyTranslations();
   renderDomains();
+  renderServers();
+  renderManagers();
 }
 
 async function renderDomains() {
@@ -220,6 +281,67 @@ async function renderDomains() {
     });
     li.appendChild(btn);
     ul.appendChild(li);
+  });
+}
+
+async function renderServers() {
+  const list = await serverStore.list();
+  const ul = document.getElementById('server-list');
+  ul.innerHTML = '';
+  list.forEach(s => {
+    const li = document.createElement('li');
+    const name = document.createElement('span');
+    name.textContent = s.tag || `${s.host}:${s.port}`;
+    const useBtn = document.createElement('button');
+    useBtn.textContent = translations[currentLang].use;
+    useBtn.addEventListener('click', () => {
+      connectToServer(s);
+    });
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', async () => {
+      await serverStore.remove(s.id);
+      renderServers();
+    });
+    li.appendChild(name);
+    li.appendChild(useBtn);
+    li.appendChild(delBtn);
+    ul.appendChild(li);
+  });
+}
+
+async function renderManagers() {
+  const resp = await browser.runtime.sendMessage({ type: 'list-managers' });
+  if (!resp || !resp.success) return;
+  const ul = document.getElementById('manager-list');
+  ul.innerHTML = '';
+  resp.list.forEach(m => {
+    const li = document.createElement('li');
+    const span = document.createElement('span');
+    span.textContent = m.apiUrl;
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', async () => {
+      await browser.runtime.sendMessage({ type: 'remove-manager', apiUrl: m.apiUrl });
+      renderManagers();
+    });
+    li.appendChild(span);
+    li.appendChild(delBtn);
+    ul.appendChild(li);
+  });
+}
+
+function connectToServer(server) {
+  const status = document.getElementById('status');
+  status.textContent = translations[currentLang].startingProxy;
+  const finalCfg = { ...server, localPort: 1080 };
+  browser.storage.local.set({ ...finalCfg, accessUrl: server.accessUrl || '' });
+  browser.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, response => {
+    if (response && response.success) {
+      status.textContent = translations[currentLang].proxyRunning;
+    } else {
+      status.textContent = translations[currentLang].error + (response && response.error);
+    }
   });
 }
 
@@ -249,6 +371,8 @@ document.getElementById('language').addEventListener('change', (e) => {
     currentLang = lang;
     browser.storage.local.set({ language: lang });
     applyTranslations();
+    renderServers();
+    renderManagers();
   }
 });
 
@@ -262,6 +386,8 @@ document.getElementById('connect').addEventListener('click', async () => {
       const chosen = parsedConfigs[parseInt(locSelect.value, 10)];
       const finalCfg = { ...chosen, localPort: 1080, accessUrl: url };
       browser.storage.local.set(finalCfg);
+      await serverStore.add(finalCfg);
+      renderServers();
       browser.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, (response) => {
         if (response && response.success) {
           status.textContent = translations[currentLang].proxyRunning;
@@ -281,6 +407,8 @@ document.getElementById('connect').addEventListener('click', async () => {
     }
     const finalCfg = { ...cfg, localPort: 1080, accessUrl: url };
     browser.storage.local.set(finalCfg);
+    await serverStore.add(finalCfg);
+    renderServers();
     browser.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, (response) => {
       if (response && response.success) {
         status.textContent = translations[currentLang].proxyRunning;
@@ -305,12 +433,20 @@ document.getElementById('sync').addEventListener('click', () => {
   const status = document.getElementById('status');
   status.textContent = translations[currentLang].syncing;
   browser.runtime.sendMessage({ type: 'sync' }, response => {
-    if (response && response.success) {
-      status.textContent = translations[currentLang].syncComplete;
-    } else {
+    if (!response || !response.success) {
       status.textContent =
         translations[currentLang].error + (response && response.error);
+      return;
     }
+    browser.runtime.sendMessage({ type: 'sync-outline' }, resp2 => {
+      if (resp2 && resp2.success) {
+        status.textContent = translations[currentLang].syncComplete;
+        renderServers();
+      } else {
+        status.textContent =
+          translations[currentLang].error + (resp2 && resp2.error);
+      }
+    });
   });
 });
 
@@ -331,4 +467,21 @@ document.getElementById('add-domain').addEventListener('click', async () => {
   await registry.addDomain(input.value);
   input.value = '';
   renderDomains();
+});
+
+document.getElementById('add-manager').addEventListener('click', async () => {
+  const url = document.getElementById('manager-url').value.trim();
+  const cert = document.getElementById('manager-cert').value.trim();
+  if (url) {
+    await browser.runtime.sendMessage({
+      type: 'add-outline-manager',
+      apiUrl: url,
+      certSha256: cert
+    });
+    document.getElementById('manager-url').value = '';
+    document.getElementById('manager-cert').value = '';
+    await browser.runtime.sendMessage({ type: 'sync-outline' });
+    renderManagers();
+    renderServers();
+  }
 });
