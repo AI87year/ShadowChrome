@@ -22,11 +22,7 @@ const translations = {
     sync: 'Sync',
     proxyDomains: 'Proxy Domains',
     addDomain: 'Add Domain',
-    domainPlaceholder: 'example.com',
-    savedServers: 'Saved Servers',
-    use: 'Use',
-    remove: 'Remove',
-    startingProxy: 'Starting proxy...',
+
     proxyRunning: 'Proxy running on 127.0.0.1:1080',
     error: 'Error: ',
     selectLocation: 'Select location and press Connect',
@@ -49,11 +45,7 @@ const translations = {
     sync: 'Sinhronizēt',
     proxyDomains: 'Starpniekservera domēni',
     addDomain: 'Pievienot domēnu',
-    domainPlaceholder: 'example.com',
-    savedServers: 'Saglabātie serveri',
-    use: 'Izmantot',
-    remove: 'Noņemt',
-    startingProxy: 'Startē starpniekserveri...',
+
     proxyRunning: 'Starpniekserveris darbojas uz 127.0.0.1:1080',
     error: 'Kļūda: ',
     selectLocation: "Izvēlieties atrašanās vietu un nospiediet 'Pievienoties'",
@@ -76,11 +68,7 @@ const translations = {
     sync: 'Сінхранізаваць',
     proxyDomains: 'Дамены праксі',
     addDomain: 'Дадаць дамен',
-    domainPlaceholder: 'example.com',
-    savedServers: 'Захаваныя серверы',
-    use: 'Выкарыстаць',
-    remove: 'Выдаліць',
-    startingProxy: 'Запуск праксі...',
+
     proxyRunning: 'Праксі працуе на 127.0.0.1:1080',
     error: 'Памылка: ',
     selectLocation: 'Выберыце месцазнаходжанне і націсніце "Падключыць"',
@@ -103,11 +91,7 @@ const translations = {
     sync: 'Synchronisieren',
     proxyDomains: 'Proxy-Domains',
     addDomain: 'Domain hinzufügen',
-    domainPlaceholder: 'example.com',
-    savedServers: 'Gespeicherte Server',
-    use: 'Verwenden',
-    remove: 'Entfernen',
-    startingProxy: 'Proxy wird gestartet...',
+
     proxyRunning: 'Proxy läuft auf 127.0.0.1:1080',
     error: 'Fehler: ',
     selectLocation: 'Standort wählen und auf "Verbinden" klicken',
@@ -130,11 +114,7 @@ const translations = {
     sync: 'Sincronizar',
     proxyDomains: 'Dominios proxy',
     addDomain: 'Agregar dominio',
-    domainPlaceholder: 'example.com',
-    savedServers: 'Servidores guardados',
-    use: 'Usar',
-    remove: 'Eliminar',
-    startingProxy: 'Iniciando proxy...',
+
     proxyRunning: 'Proxy en ejecución en 127.0.0.1:1080',
     error: 'Error: ',
     selectLocation: 'Selecciona ubicación y pulsa Conectar',
@@ -157,11 +137,7 @@ const translations = {
     sync: 'Synchroniser',
     proxyDomains: 'Domaines proxy',
     addDomain: 'Ajouter domaine',
-    domainPlaceholder: 'example.com',
-    savedServers: 'Serveurs enregistrés',
-    use: 'Utiliser',
-    remove: 'Supprimer',
-    startingProxy: 'Démarrage du proxy...',
+
     proxyRunning: 'Proxy en cours sur 127.0.0.1:1080',
     error: 'Erreur: ',
     selectLocation: 'Choisissez un emplacement et cliquez sur Connecter',
@@ -184,11 +160,7 @@ const translations = {
     sync: 'Синхронизировать',
     proxyDomains: 'Прокси домены',
     addDomain: 'Добавить домен',
-    domainPlaceholder: 'example.com',
-    savedServers: 'Сохранённые серверы',
-    use: 'Использовать',
-    remove: 'Удалить',
-    startingProxy: 'Запуск прокси...',
+
     proxyRunning: 'Прокси работает на 127.0.0.1:1080',
     error: 'Ошибка: ',
     selectLocation: 'Выберите расположение и нажмите Подключить',
@@ -217,6 +189,7 @@ function applyTranslations() {
   document.getElementById('add-domain').textContent = t.addDomain;
   document.getElementById('domain-input').placeholder = t.domainPlaceholder;
   document.getElementById('servers-title').textContent = t.savedServers;
+
 }
 
 async function loadConfig() {
@@ -231,6 +204,7 @@ async function loadConfig() {
   applyTranslations();
   renderDomains();
   renderServers();
+
 }
 
 async function renderDomains() {
@@ -318,6 +292,7 @@ document.getElementById('language').addEventListener('change', (e) => {
     browser.storage.local.set({ language: lang });
     applyTranslations();
     renderServers();
+
   }
 });
 
@@ -378,12 +353,20 @@ document.getElementById('sync').addEventListener('click', () => {
   const status = document.getElementById('status');
   status.textContent = translations[currentLang].syncing;
   browser.runtime.sendMessage({ type: 'sync' }, response => {
-    if (response && response.success) {
-      status.textContent = translations[currentLang].syncComplete;
-    } else {
+    if (!response || !response.success) {
       status.textContent =
         translations[currentLang].error + (response && response.error);
+      return;
     }
+    browser.runtime.sendMessage({ type: 'sync-outline' }, resp2 => {
+      if (resp2 && resp2.success) {
+        status.textContent = translations[currentLang].syncComplete;
+        renderServers();
+      } else {
+        status.textContent =
+          translations[currentLang].error + (resp2 && resp2.error);
+      }
+    });
   });
 });
 
@@ -404,4 +387,21 @@ document.getElementById('add-domain').addEventListener('click', async () => {
   await registry.addDomain(input.value);
   input.value = '';
   renderDomains();
+});
+
+document.getElementById('add-manager').addEventListener('click', async () => {
+  const url = document.getElementById('manager-url').value.trim();
+  const cert = document.getElementById('manager-cert').value.trim();
+  if (url) {
+    await browser.runtime.sendMessage({
+      type: 'add-outline-manager',
+      apiUrl: url,
+      certSha256: cert
+    });
+    document.getElementById('manager-url').value = '';
+    document.getElementById('manager-cert').value = '';
+    await browser.runtime.sendMessage({ type: 'sync-outline' });
+    renderManagers();
+    renderServers();
+  }
 });

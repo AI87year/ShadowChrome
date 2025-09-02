@@ -27,11 +27,23 @@ Beyond the technical challenge, ShadowChrome embodies a philosophy of openness: 
 ## Source Layout
 ```text
 src/
-├─ background.js      # Service worker controlling proxy settings and sockets client
-├─ manifest.json      # MV3 manifest declaring permissions and background worker
-├─ popup.html         # User interface markup
-├─ popup.js           # UI logic and messaging with the worker
-└─ ssConfig.js        # Parser for access URLs and remote subscriptions
+├─ background.js              # Service worker controlling proxy, PAC and Shadowsocks client
+├─ browser-api.js             # Cross-browser API wrapper with Promise helpers
+├─ censortracker.js           # Load embedded CensorTracker domains and fetch updates
+├─ censortracker-domains.json # Bundled domain blocklist
+├─ diagnostics.js             # Collect diagnostic info for troubleshooting
+├─ logger.js                  # Minimal logging wrapper
+├─ manifest.json              # MV3 manifest declaring permissions and background worker
+├─ outlineManager.js          # Sync Outline Manager access keys into the store
+├─ pac.js                     # Generate PAC scripts for domain-based routing
+├─ popup.html                 # User interface markup
+├─ popup.js                   # UI logic, server list, and manager controls
+├─ proxyManager.js            # Apply PAC script or proxy settings
+├─ registry.js                # Persistent domain registry used by PAC
+├─ serverClient.js            # Fetch remote configs and domain lists from mirrors
+├─ serverStore.js             # Persist Shadowsocks server configurations
+├─ ssConfig.js                # Parser for access URLs and remote subscriptions
+└─ utils/withTimeout.js       # Helper to enforce fetch timeouts
 ```
 
 ## Module Details
@@ -42,6 +54,11 @@ The popup contains:
 - **Location selector** (`#location`) hidden until multiple servers are available
 - **Connect** (`#connect`) and **Disconnect** (`#disconnect`) buttons
 - **Status label** (`#status`)
+- **Sync** button to refresh remote configs and Outline managers
+- **Diagnostics** button with output area
+- **Domain registry editor** (`#domain-input` and `#domain-list`)
+- **Saved server list** with **Use** and **Remove** buttons
+- **Outline manager section** to add manager URLs and list/remove them
 
 Key event handlers in `popup.js`:
 - `DOMContentLoaded` → calls `loadConfig()` to prefill the URL box.
@@ -51,6 +68,11 @@ Key event handlers in `popup.js`:
   - Displays location selector if multiple configs.
   - Sends `start-proxy` message with chosen config.
 - `#disconnect click` → sends `stop-proxy` message and updates status.
+- `#language change` → persists language and reapplies translations.
+- `#sync click` → triggers both remote mirror sync and Outline manager sync.
+- `#diagnostics-btn click` → collects environment info for debugging.
+- `#add-domain click` → appends a domain to the registry.
+- `#add-manager click` → stores an Outline manager and immediately syncs its access keys.
 
 The popup never holds long‑running connections; all network operations occur in the background worker.
 
@@ -108,6 +130,39 @@ Declares MV3 background service worker and required permissions:
 - `storage` for saving settings.
 - `sockets` for the TCP client.
 - `host_permissions: <all_urls>` to allow fetching remote subscription files.
+
+### registry.js
+Maintains a persistent list of domains that should be routed through the proxy. It offers `addDomain`, `removeDomain`, and change listeners so the PAC script can be regenerated whenever the list updates.
+
+### proxyManager.js
+Generates and applies PAC scripts based on the registry contents. In Firefox it registers a PAC file URL; in Chrome it sets the `pac_script` proxy mode.
+
+### pac.js
+Helper that creates a PAC script string performing a binary search over the domain list and falling back to SOCKS5 for `.onion` and `.i2p` hosts.
+
+### serverStore.js
+Stores Shadowsocks server configurations in `chrome.storage.local` and notifies listeners on changes. Used by the popup to present a list of saved servers and by the Outline manager to persist fetched keys.
+
+### outlineManager.js
+Synchronizes Outline Manager instances. Each manager is defined by an API URL and optional certificate hash. The module periodically fetches access keys and normalizes them via `parseAccessUrl` before adding them to `ServerStore`.
+
+### serverClient.js
+Fetches remote configuration files and domain lists from a set of mirror URLs. Updates the registry and remote configuration on a scheduled basis using alarms.
+
+### censortracker.js
+Provides `loadBundledDomains` to read the embedded CensorTracker blocklist and `fetchRemoteDomains` to refresh it from the upstream repository when online.
+
+### browser-api.js
+Wraps the `chrome`/`browser` objects and exposes promise-based helpers for messaging and storage, enabling the codebase to run on both Chrome and Firefox.
+
+### diagnostics.js
+Collects basic diagnostic data such as stored configuration and environment info, allowing users to copy troubleshooting details from the popup.
+
+### logger.js
+Lightweight logging utility with in-memory buffering and persistence to `storage.local` so logs survive extension restarts.
+
+### utils/withTimeout.js
+Races any promise against a timeout and rejects if the time is exceeded. Used to guard network requests such as Outline API calls.
 
 ## Data Flow and Storage
 `chrome.storage.local` keeps the last used access URL and the expanded configuration, enabling the popup to restore state on next launch. The chosen configuration is also sent to the service worker on every connection attempt. No other persistent data is stored. This minimal approach ensures that sensitive secrets remain in memory only as long as necessary and can be cleared simply by removing the extension.

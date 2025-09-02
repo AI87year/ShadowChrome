@@ -365,6 +365,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(() => sendResponse({ success: true }))
       .catch(e => sendResponse({ success: false, error: e.message }));
     return true;
+
   } else if (message.type === 'remove-server') {
     serverStore
       .remove(message.id)
