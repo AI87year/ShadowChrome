@@ -1,8 +1,13 @@
 import { browser } from './browser-api.js';
 import { parseAccessUrl } from './ssConfig.js';
 import Registry from './registry.js';
+import ServerStore from './serverStore.js';
 
 const registry = new Registry();
+const serverStore = new ServerStore();
+serverStore.onChange(() => {
+  renderServers();
+});
 let parsedConfigs = null;
 let currentLang = 'en';
 
@@ -18,6 +23,9 @@ const translations = {
     proxyDomains: 'Proxy Domains',
     addDomain: 'Add Domain',
     domainPlaceholder: 'example.com',
+    savedServers: 'Saved Servers',
+    use: 'Use',
+    remove: 'Remove',
     startingProxy: 'Starting proxy...',
     proxyRunning: 'Proxy running on 127.0.0.1:1080',
     error: 'Error: ',
@@ -42,6 +50,9 @@ const translations = {
     proxyDomains: 'Starpniekservera domēni',
     addDomain: 'Pievienot domēnu',
     domainPlaceholder: 'example.com',
+    savedServers: 'Saglabātie serveri',
+    use: 'Izmantot',
+    remove: 'Noņemt',
     startingProxy: 'Startē starpniekserveri...',
     proxyRunning: 'Starpniekserveris darbojas uz 127.0.0.1:1080',
     error: 'Kļūda: ',
@@ -66,6 +77,9 @@ const translations = {
     proxyDomains: 'Дамены праксі',
     addDomain: 'Дадаць дамен',
     domainPlaceholder: 'example.com',
+    savedServers: 'Захаваныя серверы',
+    use: 'Выкарыстаць',
+    remove: 'Выдаліць',
     startingProxy: 'Запуск праксі...',
     proxyRunning: 'Праксі працуе на 127.0.0.1:1080',
     error: 'Памылка: ',
@@ -90,6 +104,9 @@ const translations = {
     proxyDomains: 'Proxy-Domains',
     addDomain: 'Domain hinzufügen',
     domainPlaceholder: 'example.com',
+    savedServers: 'Gespeicherte Server',
+    use: 'Verwenden',
+    remove: 'Entfernen',
     startingProxy: 'Proxy wird gestartet...',
     proxyRunning: 'Proxy läuft auf 127.0.0.1:1080',
     error: 'Fehler: ',
@@ -114,6 +131,9 @@ const translations = {
     proxyDomains: 'Dominios proxy',
     addDomain: 'Agregar dominio',
     domainPlaceholder: 'example.com',
+    savedServers: 'Servidores guardados',
+    use: 'Usar',
+    remove: 'Eliminar',
     startingProxy: 'Iniciando proxy...',
     proxyRunning: 'Proxy en ejecución en 127.0.0.1:1080',
     error: 'Error: ',
@@ -138,6 +158,9 @@ const translations = {
     proxyDomains: 'Domaines proxy',
     addDomain: 'Ajouter domaine',
     domainPlaceholder: 'example.com',
+    savedServers: 'Serveurs enregistrés',
+    use: 'Utiliser',
+    remove: 'Supprimer',
     startingProxy: 'Démarrage du proxy...',
     proxyRunning: 'Proxy en cours sur 127.0.0.1:1080',
     error: 'Erreur: ',
@@ -162,6 +185,9 @@ const translations = {
     proxyDomains: 'Прокси домены',
     addDomain: 'Добавить домен',
     domainPlaceholder: 'example.com',
+    savedServers: 'Сохранённые серверы',
+    use: 'Использовать',
+    remove: 'Удалить',
     startingProxy: 'Запуск прокси...',
     proxyRunning: 'Прокси работает на 127.0.0.1:1080',
     error: 'Ошибка: ',
@@ -190,6 +216,7 @@ function applyTranslations() {
   document.getElementById('domains-title').textContent = t.proxyDomains;
   document.getElementById('add-domain').textContent = t.addDomain;
   document.getElementById('domain-input').placeholder = t.domainPlaceholder;
+  document.getElementById('servers-title').textContent = t.savedServers;
 }
 
 async function loadConfig() {
@@ -203,6 +230,7 @@ async function loadConfig() {
   }
   applyTranslations();
   renderDomains();
+  renderServers();
 }
 
 async function renderDomains() {
@@ -220,6 +248,46 @@ async function renderDomains() {
     });
     li.appendChild(btn);
     ul.appendChild(li);
+  });
+}
+
+async function renderServers() {
+  const list = await serverStore.list();
+  const ul = document.getElementById('server-list');
+  ul.innerHTML = '';
+  list.forEach(s => {
+    const li = document.createElement('li');
+    const name = document.createElement('span');
+    name.textContent = s.tag || `${s.host}:${s.port}`;
+    const useBtn = document.createElement('button');
+    useBtn.textContent = translations[currentLang].use;
+    useBtn.addEventListener('click', () => {
+      connectToServer(s);
+    });
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', async () => {
+      await serverStore.remove(s.id);
+      renderServers();
+    });
+    li.appendChild(name);
+    li.appendChild(useBtn);
+    li.appendChild(delBtn);
+    ul.appendChild(li);
+  });
+}
+
+function connectToServer(server) {
+  const status = document.getElementById('status');
+  status.textContent = translations[currentLang].startingProxy;
+  const finalCfg = { ...server, localPort: 1080 };
+  browser.storage.local.set({ ...finalCfg, accessUrl: server.accessUrl || '' });
+  browser.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, response => {
+    if (response && response.success) {
+      status.textContent = translations[currentLang].proxyRunning;
+    } else {
+      status.textContent = translations[currentLang].error + (response && response.error);
+    }
   });
 }
 
@@ -249,6 +317,7 @@ document.getElementById('language').addEventListener('change', (e) => {
     currentLang = lang;
     browser.storage.local.set({ language: lang });
     applyTranslations();
+    renderServers();
   }
 });
 
@@ -262,6 +331,8 @@ document.getElementById('connect').addEventListener('click', async () => {
       const chosen = parsedConfigs[parseInt(locSelect.value, 10)];
       const finalCfg = { ...chosen, localPort: 1080, accessUrl: url };
       browser.storage.local.set(finalCfg);
+      await serverStore.add(finalCfg);
+      renderServers();
       browser.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, (response) => {
         if (response && response.success) {
           status.textContent = translations[currentLang].proxyRunning;
@@ -281,6 +352,8 @@ document.getElementById('connect').addEventListener('click', async () => {
     }
     const finalCfg = { ...cfg, localPort: 1080, accessUrl: url };
     browser.storage.local.set(finalCfg);
+    await serverStore.add(finalCfg);
+    renderServers();
     browser.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, (response) => {
       if (response && response.success) {
         status.textContent = translations[currentLang].proxyRunning;

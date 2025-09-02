@@ -4,17 +4,38 @@ import Registry from './registry.js';
 import ServerClient from './serverClient.js';
 import logger from './logger.js';
 import { collectDiagnostics } from './diagnostics.js';
+import { loadBundledDomains, fetchRemoteDomains } from './censortracker.js';
+import ServerStore from './serverStore.js';
+import OutlineManager from './outlineManager.js';
 
 let proxyConfig = null;
 let serverSocketId = null;
 
 const registry = new Registry();
+const serverStore = new ServerStore();
 const proxyManager = new ProxyManager(registry);
 const serverClient = new ServerClient(registry, [
   'https://config.example.com',
   'https://backup.example.net'
 ]);
 serverClient.scheduleUpdates();
+const outlineManager = new OutlineManager(serverStore);
+outlineManager.scheduleSync();
+
+async function bootstrapDomains() {
+  const current = await registry.getDomains();
+  if (current.length === 0) {
+    const bundled = await loadBundledDomains();
+    if (bundled.length) {
+      await registry.setDomains(bundled);
+    }
+    fetchRemoteDomains().then(domains => {
+      if (domains.length) registry.setDomains(domains);
+    });
+  }
+}
+
+bootstrapDomains();
 
 logger.load().then(() => logger.info('Background script initialized'));
 
@@ -336,6 +357,24 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     logger.info('Diagnostics requested');
     collectDiagnostics()
       .then(data => sendResponse({ success: true, data }))
+      .catch(e => sendResponse({ success: false, error: e.message }));
+    return true;
+  } else if (message.type === 'add-outline-manager') {
+    outlineManager
+      .addManager(message.apiUrl, message.certSha256)
+      .then(() => sendResponse({ success: true }))
+      .catch(e => sendResponse({ success: false, error: e.message }));
+    return true;
+  } else if (message.type === 'remove-server') {
+    serverStore
+      .remove(message.id)
+      .then(() => sendResponse({ success: true }))
+      .catch(e => sendResponse({ success: false, error: e.message }));
+    return true;
+  } else if (message.type === 'list-servers') {
+    serverStore
+      .list()
+      .then(list => sendResponse({ success: true, list }))
       .catch(e => sendResponse({ success: false, error: e.message }));
     return true;
   }
