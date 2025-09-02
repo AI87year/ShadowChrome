@@ -288,7 +288,7 @@ document.getElementById('connect').addEventListener('click', async () => {
         status.textContent = translations[currentLang].error + (response && response.error);
       }
     });
-  } catch (e) {
+  } catch {
     status.textContent = translations[currentLang].failedStart;
   }
 });
