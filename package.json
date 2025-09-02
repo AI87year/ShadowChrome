@@ -2,12 +2,15 @@
   "name": "shadowchrome",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "lint": "eslint \"src/**/*.js\"",
     "list": "node scripts/listActions.mjs"
   },
   "devDependencies": {
-    "eslint": "^8.56.0",
-    "globby": "^13.2.2"
+    "@eslint/js": "^9.34.0",
+    "eslint": "^9.34.0",
+    "globals": "^15.15.0",
+    "globby": "^14.1.0"
   }
 }

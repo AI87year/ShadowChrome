@@ -25,7 +25,7 @@ export async function parseSsUrl(url) {
   let decoded;
   try {
     decoded = atob(rest);
-  } catch (e) {
+  } catch {
     decoded = rest;
   }
   if (/^(https?:\/\/|ssconf:\/\/)/.test(decoded)) {
@@ -59,7 +59,7 @@ async function fetchConfig(onlineUrl) {
     if (maybe.includes('ss://') || maybe.trim().startsWith('{') || maybe.trim().startsWith('[')) {
       text = maybe.trim();
     }
-  } catch (e) {
+  } catch {
     // not base64, ignore
   }
   if (text.startsWith('ss://') || text.includes('ss://')) {

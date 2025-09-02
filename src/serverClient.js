@@ -18,7 +18,7 @@ export default class ServerClient {
         if (resp.ok) {
           return await resp.json();
         }
-      } catch (e) {
+      } catch {
         // ignore and continue
       }
     }
