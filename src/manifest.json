@@ -7,7 +7,9 @@
     "storage",
     "proxy",
     "sockets",
-    "alarms"
+    "alarms",
+    "webRequest",
+    "webRequestBlocking"
   ],
   "host_permissions": ["<all_urls>"],
   "sockets": { "tcp": { "connect": "*" } },
