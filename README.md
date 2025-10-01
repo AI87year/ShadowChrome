@@ -47,6 +47,8 @@ The extension is intentionally simple. Each module has a narrow responsibility t
 - `background.js` (service worker) applies proxy settings and runs a full Shadowsocks client using `chrome.sockets`.
 
 For a deep dive into workflow and implementation details, see [`docs/DETAILED_DOCUMENTATION.md`](docs/DETAILED_DOCUMENTATION.md).
+For module-by-module guidance and runtime flow diagrams, start with
+[`docs/architecture/README.md`](docs/architecture/README.md).
 
 ## User Guide
 

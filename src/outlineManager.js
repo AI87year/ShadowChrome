@@ -1,6 +1,6 @@
 import { browser } from './browser-api.js';
 import { parseAccessUrl } from './ssConfig.js';
-import { withTimeout } from './utils/withTimeout.js';
+import { fetchWithTimeout } from './utils/fetchWithTimeout.js';
 
 export default class OutlineManager {
   constructor(store) {
@@ -37,7 +37,11 @@ export default class OutlineManager {
 
   async fetchAccessKeys(manager, timeoutMs = 5000) {
     const url = manager.apiUrl.replace(/\/$/, '') + '/access-keys/';
-    const resp = await withTimeout(fetch(url, { cache: 'no-store' }), timeoutMs);
+    const resp = await fetchWithTimeout(url, {
+      timeout: timeoutMs,
+      message: `Outline manager at ${manager.apiUrl} timed out`,
+      cache: 'no-store'
+    });
     if (!resp.ok) throw new Error('Failed to fetch access keys');
     const json = await resp.json();
     if (Array.isArray(json)) return json;

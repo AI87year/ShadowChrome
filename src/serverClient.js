@@ -1,5 +1,5 @@
 import { browser } from './browser-api.js';
-import { withTimeout } from './utils/withTimeout.js';
+import { fetchWithTimeout } from './utils/fetchWithTimeout.js';
 
 export default class ServerClient {
   constructor(registry, mirrors = []) {
@@ -12,7 +12,11 @@ export default class ServerClient {
     for (const base of this.mirrors) {
       const url = base + path;
       try {
-        const resp = await withTimeout(fetch(url, { cache: 'no-store' }), timeoutMs);
+        const resp = await fetchWithTimeout(url, {
+          timeout: timeoutMs,
+          message: `Request to ${base} timed out`,
+          cache: 'no-store'
+        });
         if (resp.ok) {
           const data = await resp.json();
           return { data, url, source: base };

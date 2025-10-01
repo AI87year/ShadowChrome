@@ -1,4 +1,5 @@
 import logger from './logger.js';
+import { fetchWithTimeout } from './utils/fetchWithTimeout.js';
 
 const REMOTE_URL = 'https://raw.githubusercontent.com/censortracker/censortracker/stable/src/shared/data/domains.json';
 
@@ -8,7 +9,11 @@ export async function loadBundledDomains() {
   if (bundled) return bundled;
   try {
     const url = new URL('./censortracker-domains.json', import.meta.url);
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url, {
+      timeout: 5000,
+      message: 'Loading bundled CensorTracker domains timed out',
+      cache: 'no-store'
+    });
     if (!res.ok) throw new Error(res.statusText);
     bundled = (await res.json()).map(d => d.toLowerCase());
     return bundled;
@@ -21,7 +26,11 @@ export async function loadBundledDomains() {
 
 export async function fetchRemoteDomains() {
   try {
-    const res = await fetch(REMOTE_URL);
+    const res = await fetchWithTimeout(REMOTE_URL, {
+      timeout: 8000,
+      message: 'Fetching remote CensorTracker domains timed out',
+      cache: 'no-store'
+    });
     if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();
     const domains = Array.isArray(data) ? data : data.domains || [];

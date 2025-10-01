@@ -1,6 +1,7 @@
 import { browser } from './browser-api.js';
 import logger from './logger.js';
 import { parseAccessUrl } from './ssConfig.js';
+import { fetchWithTimeout } from './utils/fetchWithTimeout.js';
 
 const CONFIG_ENDPOINTS = [
   {
@@ -21,8 +22,12 @@ const FALLBACK_COUNTRY_CODE = 'RU';
 const ALARM_NAME = 'censortracker-sync';
 const FALLBACK_STORAGE_KEY = 'censortrackerFallback';
 
-async function fetchJson(url) {
-  const response = await fetch(url, { cache: 'no-store' });
+async function fetchJson(url, timeoutMs = 8000) {
+  const response = await fetchWithTimeout(url, {
+    timeout: timeoutMs,
+    message: `Request to ${url} timed out`,
+    cache: 'no-store'
+  });
   if (!response.ok) {
     throw new Error(`Request failed with status ${response.status}`);
   }
@@ -37,7 +42,7 @@ async function inquireCountryCode(geoEndpoint, explicitRegion) {
     return FALLBACK_COUNTRY_CODE;
   }
   try {
-    const data = await fetchJson(geoEndpoint);
+    const data = await fetchJson(geoEndpoint, 5000);
     if (data && data.countryCode) {
       return data.countryCode;
     }
@@ -51,7 +56,7 @@ async function fetchCensortrackerConfig() {
   const { currentRegionCode = '' } = await browser.storage.local.get({ currentRegionCode: '' });
   for (const endpoint of CONFIG_ENDPOINTS) {
     try {
-      const payload = await fetchJson(endpoint.url);
+      const payload = await fetchJson(endpoint.url, 8000);
       const { meta = {}, data = [] } = payload || {};
       if (!Array.isArray(data) || data.length === 0) {
         logger.warn('Skipping config from %s: empty payload', endpoint.name);
@@ -80,11 +85,11 @@ async function fetchRegistryPayload(registryUrl, specifics = {}) {
     return { domains: [], disseminators: [] };
   }
   try {
-    const domains = await fetchJson(registryUrl);
+    const domains = await fetchJson(registryUrl, 8000);
     let disseminators = [];
     if (specifics && specifics.cooperationRefusedORIUrl) {
       try {
-        disseminators = await fetchJson(specifics.cooperationRefusedORIUrl);
+        disseminators = await fetchJson(specifics.cooperationRefusedORIUrl, 8000);
       } catch (error) {
         logger.warn('Failed to fetch disseminator registry', error);
       }
@@ -101,7 +106,7 @@ async function fetchIgnoreList(ignoreUrl) {
     return [];
   }
   try {
-    const ignore = await fetchJson(ignoreUrl);
+    const ignore = await fetchJson(ignoreUrl, 5000);
     return Array.isArray(ignore) ? ignore : [];
   } catch (error) {
     logger.warn('Failed to fetch ignore list', error);
