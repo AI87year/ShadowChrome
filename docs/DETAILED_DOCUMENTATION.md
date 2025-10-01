@@ -6,7 +6,7 @@ ShadowChrome is a Chrome extension that runs a complete Shadowsocks client insid
 ## Philosophy and Motivation
 The project started as an exploration of how far the modern browser platform can be pushed in service of privacy. Traditional proxy clients often require installing privileged binaries, which can be intimidating or impossible in locked-down environments. ShadowChrome seeks to lower that barrier by delivering an auditable, source-available client that lives entirely within Chrome’s security sandbox. By leveraging the distributed Shadowsocks network, the extension aspires to provide a portable tool for bypassing censorship and fostering free access to information.
 
-ShadowChrome is also authored by artificial intelligence. The extension embodies a zero‑coding concept in which comprehensive technical descriptions are transformed directly into functioning software, showcasing the potential for complex programs to be produced without manual coding.
+ShadowChrome is also authored by artificial intelligence. The extension embodies a zero‑coding concept in which comprehensive technical descriptions are transformed directly into functioning software, showcasing the potential for complex programs to be produced without manual coding. Developers looking for a component-by-component breakdown can explore the dedicated architecture reference in [`docs/architecture/`](architecture/).
 
 Beyond the technical challenge, ShadowChrome embodies a philosophy of openness: every component is written in JavaScript and HTML, allowing curious users to inspect, modify, and rebuild the project without specialized toolchains. Transparency is viewed as a prerequisite for trust.
 
@@ -48,7 +48,8 @@ src/
 ├─ serverStore.js             # Persist Shadowsocks server configurations
 ├─ ssConfig.js                # Parser for access URLs and remote subscriptions
 ├─ integrations/              # Shadowsocks cipher metadata and other helpers
-└─ utils/withTimeout.js       # Helper to enforce fetch timeouts
+├─ utils/fetchWithTimeout.js  # Abortable fetch helper with MV3-friendly timeouts
+└─ utils/withTimeout.js       # Promise-based timeout guard for generic operations
 ```
 
 ## Module Details
@@ -171,8 +172,13 @@ Collects basic diagnostic data such as stored configuration and environment info
 ### logger.js
 Lightweight logging utility with in-memory buffering and persistence to `storage.local` so logs survive extension restarts.
 
+### utils/fetchWithTimeout.js
+Wraps `fetch` with an `AbortController` so background sync tasks fail fast when mirrors stall. The helper is used by the mirror,
+Outline Manager, and CensorTracker modules to enforce resilient network timeouts without leaving hanging requests in MV3.
+
 ### utils/withTimeout.js
-Races any promise against a timeout and rejects if the time is exceeded. Used to guard network requests such as Outline API calls.
+Races any promise against a timeout and rejects if the time is exceeded. Still available for legacy flows that need a generic
+timeout wrapper without abort semantics.
 
 ## Data Flow and Storage
 `chrome.storage.local` now holds:

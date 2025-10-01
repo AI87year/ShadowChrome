@@ -201,7 +201,8 @@ function sanitiseConfig(config) {
     host: config.host,
     port: Number(config.port),
     tag: config.tag || config.name,
-    localPort: Number(config.localPort || 1080)
+    localPort: Number(config.localPort || 1080),
+    plugin: config.plugin || undefined
   };
 }
 
