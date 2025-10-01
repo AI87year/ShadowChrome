@@ -1,17 +1,33 @@
+import { parseAccessKey, ServiceConfigType } from '../third_party/jigsaw-code/outlineAccessKey.js';
+import { isSupportedCipher } from './integrations/shadowsocksCiphers.js';
+import logger from './logger.js';
 import { readServerPassword } from './utils/readPassword.js';
 
 export async function parseAccessUrl(url) {
-  if (url.startsWith('ssconf://')) {
-    const onlineUrl = url.replace(/^ssconf:\/\//, 'https://');
-    return fetchConfig(onlineUrl);
+  let parsedKey;
+  try {
+    parsedKey = parseAccessKey(url);
+  } catch (error) {
+    if (url.startsWith('ssconf://')) {
+      const onlineUrl = url.replace(/^ssconf:\/\//, 'https://');
+      return fetchConfig(onlineUrl);
+    }
+    if (/^https?:\/\//.test(url)) {
+      return fetchConfig(url);
+    }
+    throw error;
   }
-  if (url.startsWith('ss://')) {
-    return parseSsUrl(url);
+
+  if (parsedKey.type === ServiceConfigType.STATIC) {
+    return parseSsUrl(parsedKey.accessUrl, parsedKey.name || undefined);
+  }
+  if (parsedKey.type === ServiceConfigType.DYNAMIC) {
+    return fetchConfig(parsedKey.transportConfigLocation.toString(), parsedKey.name || undefined);
   }
   throw new Error('Unsupported access url');
 }
 
-export async function parseSsUrl(url) {
+export async function parseSsUrl(url, defaultTag) {
   if (!url.startsWith('ss://')) {
     throw new Error('Invalid ss url');
   }
@@ -41,14 +57,29 @@ export async function parseSsUrl(url) {
   if (!pwd) {
     pwd = await readServerPassword(host);
   }
-  const cfg = { method, password: pwd, host, port: parseInt(port, 10) };
-  if (tag) {
-    cfg.tag = tag;
+  const cfg = {
+    method,
+    password: pwd,
+    host,
+    port: parseInt(port, 10),
+    tag: tag || defaultTag || undefined
+  };
+  if (cfg.method && !isSupportedCipher(cfg.method)) {
+    logger.warn('Parsed Shadowsocks cipher is not part of the canonical AEAD set', {
+      method: cfg.method
+    });
   }
   return cfg;
 }
 
-async function fetchConfig(onlineUrl) {
+function applyDefaultTag(server, defaultTag) {
+  if (!defaultTag || server.tag) {
+    return server;
+  }
+  return { ...server, tag: defaultTag };
+}
+
+async function fetchConfig(onlineUrl, defaultTag) {
   const res = await fetch(onlineUrl);
   if (!res.ok) {
     throw new Error('Failed to fetch config');
@@ -63,14 +94,14 @@ async function fetchConfig(onlineUrl) {
     // not base64, ignore
   }
   if (text.startsWith('ss://') || text.includes('ss://')) {
-    const urls = text.split(/\s+/).filter((u) => u.startsWith('ss://'));
+    const urls = text.split(/\s+/).filter(u => u.startsWith('ss://'));
     const results = [];
     for (const u of urls) {
-      const parsed = await parseSsUrl(u);
+      const parsed = await parseSsUrl(u, defaultTag);
       if (Array.isArray(parsed)) {
-        results.push(...parsed);
+        results.push(...parsed.map(server => applyDefaultTag(server, defaultTag)));
       } else {
-        results.push(parsed);
+        results.push(applyDefaultTag(parsed, defaultTag));
       }
     }
     return results;
@@ -87,13 +118,13 @@ async function fetchConfig(onlineUrl) {
             if (entry.tag || entry.name) {
               p.tag = entry.tag || entry.name;
             }
-            results.push(p);
+            results.push(applyDefaultTag(p, defaultTag));
           });
         } else {
           if (entry.tag || entry.name) {
             parsed.tag = entry.tag || entry.name;
           }
-          results.push(parsed);
+          results.push(applyDefaultTag(parsed, defaultTag));
         }
       } else {
         const parsed = {
@@ -105,7 +136,7 @@ async function fetchConfig(onlineUrl) {
         if (entry.tag || entry.name) {
           parsed.tag = entry.tag || entry.name;
         }
-        results.push(parsed);
+        results.push(applyDefaultTag(parsed, defaultTag));
       }
     }
     return results;

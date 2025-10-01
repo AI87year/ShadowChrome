@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ShadowChrome Settings</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      background: #f3f4f8;
+      color: #111;
+      margin: 0;
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 24px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin: 0;
+    }
+
+    h2 {
+      font-size: 18px;
+      margin: 0 0 12px;
+    }
+
+    p {
+      font-size: 14px;
+      margin: 0 0 12px;
+      color: #444;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      border: 1px solid #c6c6c6;
+      border-radius: 6px;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #1a73e8;
+      color: #fff;
+    }
+
+    button.secondary {
+      background: #5f6368;
+    }
+
+    button.small {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    .field-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .field-row > * {
+      flex: 1;
+    }
+
+    .list {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0 0;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 13px;
+    }
+
+    .list li:last-child {
+      border-bottom: none;
+    }
+
+    .list .item-text {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 13px;
+    }
+
+    .empty {
+      font-size: 13px;
+      color: #777;
+      margin-top: 8px;
+    }
+
+    pre {
+      background: #1e1e1e;
+      color: #e6e6e6;
+      border-radius: 8px;
+      padding: 12px;
+      max-height: 240px;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .actions button {
+      flex: none;
+    }
+
+    details.help {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #dfe3eb;
+      background: #f7f8fc;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    details.help[open] {
+      box-shadow: 0 8px 16px rgba(17, 24, 39, 0.08);
+      border-color: #c0d0f0;
+    }
+
+    details.help summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: #1a73e8;
+      list-style: none;
+      outline: none;
+    }
+
+    details.help summary::-webkit-details-marker {
+      display: none;
+    }
+
+    details.help p {
+      margin: 8px 0 0;
+      font-size: 13px;
+      color: #3c4043;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1 id="settings-title">ShadowChrome settings</h1>
+
+    <section class="card" id="language-card">
+      <h2 id="language-section-title">Language</h2>
+      <p id="language-section-description">Choose your preferred language.</p>
+      <label for="language-select" id="language-label">Language</label>
+      <select id="language-select"></select>
+      <details class="help" id="language-help">
+        <summary id="language-help-summary">Learn more</summary>
+        <p id="language-help-text">Selecting a language updates the popup and settings immediately.</p>
+      </details>
+    </section>
+
+    <section class="card" id="access-card">
+      <h2 id="access-section-title">Access keys and subscriptions</h2>
+      <p id="access-section-description">Paste an Outline or Shadowsocks access key to import servers.</p>
+      <label for="access-url" id="access-url-label">Access URL</label>
+      <input id="access-url" type="text" placeholder="ss:// or ssconf://">
+      <div class="actions">
+        <button id="import-access">Save access key</button>
+        <button id="clear-access" class="secondary">Remove saved servers</button>
+      </div>
+      <p class="muted" id="access-status"></p>
+      <details class="help" id="access-help">
+        <summary id="access-help-summary">Learn more</summary>
+        <p id="access-help-text">Outline and Shadowsocks links (including ssconf://) are imported so the popup can focus on location selection.</p>
+      </details>
+    </section>
+
+    <section class="card" id="domains-card">
+      <h2 id="domains-title">Proxy Domains</h2>
+      <p id="domain-section-description">Manage which domains are proxied.</p>
+      <label class="toggle">
+        <input id="registry-enabled" type="checkbox">
+        <span id="registry-enabled-label">Use CensorTracker registry</span>
+      </label>
+      <p class="muted" id="registry-meta"></p>
+      <div class="field-row">
+        <div>
+          <label id="domain-input-label" for="domain-input">Domain</label>
+          <input id="domain-input" type="text" placeholder="example.com">
+        </div>
+        <div style="flex:0 0 auto; align-self:flex-end;">
+          <button id="add-domain">Add Domain</button>
+        </div>
+      </div>
+      <p class="empty" id="domains-empty">No domains configured yet.</p>
+      <ul id="domain-list" class="list"></ul>
+      <details class="help" id="domains-help">
+        <summary id="domains-help-summary">Learn more</summary>
+        <p id="domains-help-text">Enable the CensorTracker registry to keep the proxy domain list in sync while still allowing your own entries.</p>
+      </details>
+
+      <h3 id="ignored-title">Ignored domains</h3>
+      <p id="ignored-section-description">Domains listed here will never be proxied.</p>
+      <div class="field-row">
+        <div>
+          <label id="ignored-input-label" for="ignored-input">Ignore domain</label>
+          <input id="ignored-input" type="text" placeholder="analytics.example">
+        </div>
+        <div style="flex:0 0 auto; align-self:flex-end;">
+          <button id="add-ignored">Add Ignore Rule</button>
+        </div>
+      </div>
+      <p class="empty" id="ignored-empty">No ignored domains.</p>
+      <ul id="ignored-list" class="list"></ul>
+      <details class="help" id="ignored-help">
+        <summary id="ignored-help-summary">Learn more</summary>
+        <p id="ignored-help-text">Ignored domains always bypass the proxy—even when the registry lists them.</p>
+      </details>
+    </section>
+
+    <section class="card" id="servers-card">
+      <h2 id="servers-title">Saved Servers</h2>
+      <p id="saved-servers-description">Servers imported from access keys or Outline managers.</p>
+      <p class="empty" id="servers-empty">No servers saved yet.</p>
+      <ul id="server-list" class="list"></ul>
+      <details class="help" id="servers-help">
+        <summary id="servers-help-summary">Learn more</summary>
+        <p id="servers-help-text">Use this list to curate the locations offered in the popup. Removing an item hides it from the selector.</p>
+      </details>
+    </section>
+
+    <section class="card" id="managers-card">
+      <h2 id="managers-title">Outline Managers</h2>
+      <p id="managers-section-description">Connect Outline managers to sync shared servers.</p>
+      <label for="manager-url" id="manager-url-label-text">Manager API URL</label>
+      <input id="manager-url" type="text" placeholder="https://example.com/">
+      <label for="manager-cert" id="manager-cert-label-text">Certificate fingerprint (optional)</label>
+      <input id="manager-cert" type="text" placeholder="SHA-256 fingerprint">
+      <div class="actions">
+        <button id="add-manager">Add Manager</button>
+      </div>
+      <p class="muted" id="managers-note">Managers are synced automatically every 30 minutes.</p>
+      <p class="empty" id="managers-empty">No Outline managers configured.</p>
+      <ul id="manager-list" class="list"></ul>
+      <details class="help" id="managers-help">
+        <summary id="managers-help-summary">Learn more</summary>
+        <p id="managers-help-text">Outline Managers let you sync shared servers; provide the API URL and optional certificate fingerprint.</p>
+      </details>
+    </section>
+
+    <section class="card" id="maintenance-card">
+      <h2 id="sync-section-title">Maintenance</h2>
+      <p id="sync-section-description">Synchronise subscriptions and registry data.</p>
+      <div class="actions">
+        <button id="sync">Sync</button>
+      </div>
+      <p class="muted" id="status"></p>
+    </section>
+
+    <section class="card" id="diagnostics-card">
+      <h2 id="diagnostics-section-title">Diagnostics</h2>
+      <p id="diagnostics-description">Collect logs for troubleshooting.</p>
+      <div class="actions">
+        <button id="diagnostics-btn" class="secondary">Diagnostics</button>
+      </div>
+      <pre id="diagnostics-output"></pre>
+      <details class="help" id="diagnostics-help">
+        <summary id="diagnostics-help-summary">Learn more</summary>
+        <p id="diagnostics-help-text">Diagnostics collect logs, registry details, and configuration snapshots to assist troubleshooting.</p>
+      </details>
+    </section>
+  </main>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

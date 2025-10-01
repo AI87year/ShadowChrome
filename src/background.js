@@ -5,6 +5,11 @@ import ServerClient from './serverClient.js';
 import logger from './logger.js';
 import { collectDiagnostics } from './diagnostics.js';
 import { loadBundledDomains, fetchRemoteDomains } from './censortracker.js';
+import {
+  scheduleCensorTrackerSync,
+  syncCensorTracker,
+  getStoredCensorTrackerFallback
+} from './censortrackerServer.js';
 import ServerStore from './serverStore.js';
 import OutlineManager from './outlineManager.js';
 
@@ -21,6 +26,7 @@ const serverClient = new ServerClient(registry, [
 serverClient.scheduleUpdates();
 const outlineManager = new OutlineManager(serverStore);
 outlineManager.scheduleSync();
+scheduleCensorTrackerSync(registry);
 
 async function bootstrapDomains() {
   const current = await registry.getDomains();
@@ -40,7 +46,7 @@ bootstrapDomains();
 logger.load().then(() => logger.info('Background script initialized'));
 
 browser.storage.onChanged.addListener(async (changes, area) => {
-  if (area === 'local' && changes.domainRegistry) {
+  if (area === 'local' && (changes.domainRegistry || changes.registryState)) {
     const port = proxyConfig ? proxyConfig.localPort : 1080;
     await proxyManager.refresh(port);
   }
@@ -353,6 +359,16 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(() => sendResponse({ success: true }))
       .catch(e => sendResponse({ success: false, error: e.message }));
     return true;
+  } else if (message.type === 'sync-censortracker') {
+    syncCensorTracker(registry)
+      .then(result => sendResponse({ success: !!result.success, result }))
+      .catch(e => sendResponse({ success: false, error: e.message }));
+    return true;
+  } else if (message.type === 'get-censortracker-fallback') {
+    getStoredCensorTrackerFallback()
+      .then(data => sendResponse({ success: true, data: data || { servers: [] } }))
+      .catch(e => sendResponse({ success: false, error: e.message }));
+    return true;
   } else if (message.type === 'get-diagnostics') {
     logger.info('Diagnostics requested');
     collectDiagnostics()
@@ -360,12 +376,43 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(e => sendResponse({ success: false, error: e.message }));
     return true;
   } else if (message.type === 'add-outline-manager') {
+    (async () => {
+      try {
+        await outlineManager.addManager(message.apiUrl, message.certSha256);
+        try {
+          await outlineManager.syncManager({
+            apiUrl: message.apiUrl,
+            certSha256: message.certSha256
+          });
+          sendResponse({ success: true });
+        } catch (syncErr) {
+          logger.warn('Outline manager sync failed after add', syncErr);
+          sendResponse({ success: true, warning: syncErr.message });
+        }
+      } catch (err) {
+        sendResponse({ success: false, error: err.message });
+      }
+    })();
+    return true;
+  } else if (message.type === 'remove-outline-manager') {
     outlineManager
-      .addManager(message.apiUrl, message.certSha256)
+      .removeManager(message.apiUrl)
+      .then(() => serverStore.removeByManager(message.apiUrl))
       .then(() => sendResponse({ success: true }))
       .catch(e => sendResponse({ success: false, error: e.message }));
     return true;
-
+  } else if (message.type === 'list-outline-managers') {
+    outlineManager
+      .listManagers()
+      .then(list => sendResponse({ success: true, list }))
+      .catch(e => sendResponse({ success: false, error: e.message }));
+    return true;
+  } else if (message.type === 'sync-outline') {
+    outlineManager
+      .syncAll()
+      .then(() => sendResponse({ success: true }))
+      .catch(e => sendResponse({ success: false, error: e.message }));
+    return true;
   } else if (message.type === 'remove-server') {
     serverStore
       .remove(message.id)
@@ -378,5 +425,39 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(list => sendResponse({ success: true, list }))
       .catch(e => sendResponse({ success: false, error: e.message }));
     return true;
+  } else if (message.type === 'get-registry-state') {
+    registry
+      .getRegistryState()
+      .then(state => sendResponse({ success: true, state }))
+      .catch(e => sendResponse({ success: false, error: e.message }));
+    return true;
+  } else if (message.type === 'set-registry-enabled') {
+    registry
+      .toggleRegistry(message.enabled)
+      .then(() => sendResponse({ success: true }))
+      .catch(e => sendResponse({ success: false, error: e.message }));
+    return true;
+  } else if (message.type === 'add-ignored-domain') {
+    registry
+      .mergeIgnoredHosts([message.domain])
+      .then(() => sendResponse({ success: true }))
+      .catch(e => sendResponse({ success: false, error: e.message }));
+    return true;
+  } else if (message.type === 'remove-ignored-domain') {
+    registry
+      .removeIgnoredHost(message.domain)
+      .then(() => sendResponse({ success: true }))
+      .catch(e => sendResponse({ success: false, error: e.message }));
+    return true;
+  } else if (message.type === 'get-proxy-status') {
+    const summary = proxyConfig
+      ? {
+          host: proxyConfig.host,
+          port: proxyConfig.port,
+          localPort: proxyConfig.localPort || 1080,
+          tag: proxyConfig.tag || null
+        }
+      : null;
+    sendResponse({ success: true, running: !!proxyConfig, summary });
   }
 });

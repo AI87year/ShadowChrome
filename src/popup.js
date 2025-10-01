@@ -1,407 +1,478 @@
-import { browser } from './browser-api.js';
+import { browser, isStub } from './browser-api.js';
 import { parseAccessUrl } from './ssConfig.js';
-import Registry from './registry.js';
 import ServerStore from './serverStore.js';
+import { getTranslation, defaultLanguage, languageOptions } from './i18n.js';
 
-const registry = new Registry();
 const serverStore = new ServerStore();
-serverStore.onChange(() => {
-  renderServers();
-});
-let parsedConfigs = null;
-let currentLang = 'en';
 
-const translations = {
-  en: {
-    language: 'Language',
-    accessUrl: 'Access URL',
-    accessUrlPlaceholder: 'ss:// or ssconf://',
-    location: 'Location',
-    connect: 'Connect',
-    disconnect: 'Disconnect',
-    sync: 'Sync',
-    proxyDomains: 'Proxy Domains',
-    addDomain: 'Add Domain',
+let currentLang = defaultLanguage;
+let cachedServers = [];
+let storedAccessUrl = '';
+let accessFormOpen = true;
 
-    proxyRunning: 'Proxy running on 127.0.0.1:1080',
-    error: 'Error: ',
-    selectLocation: 'Select location and press Connect',
-    failedStart: 'Failed to start proxy',
-    stopping: 'Stopping...',
-    proxyStopped: 'Proxy stopped',
-    syncing: 'Syncing...',
-    syncComplete: 'Sync complete',
-    diagnostics: 'Diagnostics',
-    collectingDiagnostics: 'Collecting diagnostics...',
-    diagnosticsFailed: 'Diagnostics failed'
-  },
-  lv: {
-    language: 'Valoda',
-    accessUrl: 'Piekļuves URL',
-    accessUrlPlaceholder: 'ss:// vai ssconf://',
-    location: 'Atrašanās vieta',
-    connect: 'Pievienoties',
-    disconnect: 'Atvienoties',
-    sync: 'Sinhronizēt',
-    proxyDomains: 'Starpniekservera domēni',
-    addDomain: 'Pievienot domēnu',
+const PREVIEW_ERROR = { success: false, error: 'preview-mode-unavailable' };
 
-    proxyRunning: 'Starpniekserveris darbojas uz 127.0.0.1:1080',
-    error: 'Kļūda: ',
-    selectLocation: "Izvēlieties atrašanās vietu un nospiediet 'Pievienoties'",
-    failedStart: 'Neizdevās startēt starpniekserveri',
-    stopping: 'Apstādināšana...',
-    proxyStopped: 'Starpniekserveris apstādināts',
-    syncing: 'Sinhronizācija...',
-    syncComplete: 'Sinhronizācija pabeigta',
-    diagnostics: 'Diagnostika',
-    collectingDiagnostics: 'Vāc diagnostiku...',
-    diagnosticsFailed: 'Diagnostika neizdevās'
-  },
-  be: {
-    language: 'Мова',
-    accessUrl: 'Адрас доступу',
-    accessUrlPlaceholder: 'ss:// або ssconf://',
-    location: 'Месцазнаходжанне',
-    connect: 'Падключыць',
-    disconnect: 'Адключыць',
-    sync: 'Сінхранізаваць',
-    proxyDomains: 'Дамены праксі',
-    addDomain: 'Дадаць дамен',
-
-    proxyRunning: 'Праксі працуе на 127.0.0.1:1080',
-    error: 'Памылка: ',
-    selectLocation: 'Выберыце месцазнаходжанне і націсніце "Падключыць"',
-    failedStart: 'Не атрымалася запусціць праксі',
-    stopping: 'Спыненне...',
-    proxyStopped: 'Праксі спынены',
-    syncing: 'Сінхранізацыя...',
-    syncComplete: 'Сінхранізацыя завершана',
-    diagnostics: 'Дыягностыка',
-    collectingDiagnostics: 'Збор дыягностыкі...',
-    diagnosticsFailed: 'Дыягностыка не ўдалася'
-  },
-  de: {
-    language: 'Sprache',
-    accessUrl: 'Zugriffs-URL',
-    accessUrlPlaceholder: 'ss:// oder ssconf://',
-    location: 'Standort',
-    connect: 'Verbinden',
-    disconnect: 'Trennen',
-    sync: 'Synchronisieren',
-    proxyDomains: 'Proxy-Domains',
-    addDomain: 'Domain hinzufügen',
-
-    proxyRunning: 'Proxy läuft auf 127.0.0.1:1080',
-    error: 'Fehler: ',
-    selectLocation: 'Standort wählen und auf "Verbinden" klicken',
-    failedStart: 'Proxy konnte nicht gestartet werden',
-    stopping: 'Wird gestoppt...',
-    proxyStopped: 'Proxy gestoppt',
-    syncing: 'Synchronisiere...',
-    syncComplete: 'Synchronisierung abgeschlossen',
-    diagnostics: 'Diagnose',
-    collectingDiagnostics: 'Sammle Diagnose...',
-    diagnosticsFailed: 'Diagnose fehlgeschlagen'
-  },
-  es: {
-    language: 'Idioma',
-    accessUrl: 'URL de acceso',
-    accessUrlPlaceholder: 'ss:// o ssconf://',
-    location: 'Ubicación',
-    connect: 'Conectar',
-    disconnect: 'Desconectar',
-    sync: 'Sincronizar',
-    proxyDomains: 'Dominios proxy',
-    addDomain: 'Agregar dominio',
-
-    proxyRunning: 'Proxy en ejecución en 127.0.0.1:1080',
-    error: 'Error: ',
-    selectLocation: 'Selecciona ubicación y pulsa Conectar',
-    failedStart: 'No se pudo iniciar el proxy',
-    stopping: 'Deteniendo...',
-    proxyStopped: 'Proxy detenido',
-    syncing: 'Sincronizando...',
-    syncComplete: 'Sincronización completa',
-    diagnostics: 'Diagnósticos',
-    collectingDiagnostics: 'Recopilando diagnósticos...',
-    diagnosticsFailed: 'Diagnósticos fallidos'
-  },
-  fr: {
-    language: 'Langue',
-    accessUrl: "URL d'accès",
-    accessUrlPlaceholder: 'ss:// ou ssconf://',
-    location: 'Emplacement',
-    connect: 'Connecter',
-    disconnect: 'Déconnecter',
-    sync: 'Synchroniser',
-    proxyDomains: 'Domaines proxy',
-    addDomain: 'Ajouter domaine',
-
-    proxyRunning: 'Proxy en cours sur 127.0.0.1:1080',
-    error: 'Erreur: ',
-    selectLocation: 'Choisissez un emplacement et cliquez sur Connecter',
-    failedStart: 'Échec du démarrage du proxy',
-    stopping: 'Arrêt...',
-    proxyStopped: 'Proxy arrêté',
-    syncing: 'Synchronisation...',
-    syncComplete: 'Synchronisation terminée',
-    diagnostics: 'Diagnostics',
-    collectingDiagnostics: 'Collecte des diagnostics...',
-    diagnosticsFailed: 'Échec des diagnostics'
-  },
-  ru: {
-    language: 'Язык',
-    accessUrl: 'URL доступа',
-    accessUrlPlaceholder: 'ss:// или ssconf://',
-    location: 'Расположение',
-    connect: 'Подключить',
-    disconnect: 'Отключить',
-    sync: 'Синхронизировать',
-    proxyDomains: 'Прокси домены',
-    addDomain: 'Добавить домен',
-
-    proxyRunning: 'Прокси работает на 127.0.0.1:1080',
-    error: 'Ошибка: ',
-    selectLocation: 'Выберите расположение и нажмите Подключить',
-    failedStart: 'Не удалось запустить прокси',
-    stopping: 'Остановка...',
-    proxyStopped: 'Прокси остановлен',
-    syncing: 'Синхронизация...',
-    syncComplete: 'Синхронизация завершена',
-    diagnostics: 'Диагностика',
-    collectingDiagnostics: 'Сбор диагностики...',
-    diagnosticsFailed: 'Сбой диагностики'
-  }
+const elements = {
+  settingsLabel: document.getElementById('settings-label'),
+  languageLabel: document.getElementById('language-label'),
+  languageSelect: document.getElementById('language-select'),
+  languageNote: document.getElementById('language-note'),
+  accessSection: document.getElementById('access-section'),
+  accessLabel: document.getElementById('access-label'),
+  accessInput: document.getElementById('access-input'),
+  saveAccess: document.getElementById('save-access'),
+  locationSection: document.getElementById('location-section'),
+  locationLabel: document.getElementById('location-label'),
+  locationSelect: document.getElementById('location-select'),
+  locationNote: document.getElementById('location-note'),
+  connect: document.getElementById('connect'),
+  disconnect: document.getElementById('disconnect'),
+  changeAccess: document.getElementById('change-access'),
+  openSettings: document.getElementById('open-settings'),
+  status: document.getElementById('status')
 };
 
+serverStore.onChange(() => {
+  refreshLocations().catch(err => console.error('Failed to refresh locations', err));
+});
+
+function t() {
+  return getTranslation(currentLang);
+}
+
 function applyTranslations() {
-  const t = translations[currentLang];
-  document.getElementById('language-label-text').textContent = t.language;
-  document.getElementById('url-label-text').textContent = t.accessUrl;
-  document.getElementById('url').placeholder = t.accessUrlPlaceholder;
-  document.getElementById('location-label-text').textContent = t.location;
-  document.getElementById('connect').textContent = t.connect;
-  document.getElementById('disconnect').textContent = t.disconnect;
-  document.getElementById('sync').textContent = t.sync;
-  document.getElementById('diagnostics-btn').textContent = t.diagnostics;
-  document.getElementById('domains-title').textContent = t.proxyDomains;
-  document.getElementById('add-domain').textContent = t.addDomain;
-  document.getElementById('domain-input').placeholder = t.domainPlaceholder;
-  document.getElementById('servers-title').textContent = t.savedServers;
-
+  const tr = t();
+  document.documentElement.lang = currentLang;
+  elements.settingsLabel.textContent = tr.settingsButton || tr.openSettings || 'Settings';
+  elements.languageLabel.textContent = tr.language;
+  elements.languageNote.textContent = tr.languageSharedNote || '';
+  elements.languageNote.style.display = elements.languageNote.textContent ? 'block' : 'none';
+  elements.accessLabel.textContent = tr.accessUrl;
+  elements.accessInput.placeholder = tr.accessUrlPlaceholder;
+  elements.saveAccess.textContent = tr.accessSectionButton || tr.saveAccessKey || tr.sync;
+  elements.locationLabel.textContent = tr.location;
+  elements.locationNote.textContent = tr.locationNote || '';
+  elements.locationNote.style.display = cachedServers.length ? 'block' : 'none';
+  elements.connect.textContent = tr.connect;
+  elements.disconnect.textContent = tr.disconnect;
+  elements.changeAccess.textContent = tr.changeAccessKey || tr.accessUrl;
 }
 
-async function loadConfig() {
-  const cfg = await browser.storage.local.get(['accessUrl', 'language']);
-  if (cfg.accessUrl) {
-    document.getElementById('url').value = cfg.accessUrl;
-  }
-  if (cfg.language && translations[cfg.language]) {
-    currentLang = cfg.language;
-    document.getElementById('language').value = currentLang;
-  }
-  applyTranslations();
-  renderDomains();
-  renderServers();
-
-}
-
-async function renderDomains() {
-  const list = await registry.getDomains();
-  const ul = document.getElementById('domain-list');
-  ul.innerHTML = '';
-  list.forEach(d => {
-    const li = document.createElement('li');
-    li.textContent = d;
-    const btn = document.createElement('button');
-    btn.textContent = '✕';
-    btn.addEventListener('click', async () => {
-      await registry.removeDomain(d);
-      renderDomains();
-    });
-    li.appendChild(btn);
-    ul.appendChild(li);
-  });
-}
-
-async function renderServers() {
-  const list = await serverStore.list();
-  const ul = document.getElementById('server-list');
-  ul.innerHTML = '';
-  list.forEach(s => {
-    const li = document.createElement('li');
-    const name = document.createElement('span');
-    name.textContent = s.tag || `${s.host}:${s.port}`;
-    const useBtn = document.createElement('button');
-    useBtn.textContent = translations[currentLang].use;
-    useBtn.addEventListener('click', () => {
-      connectToServer(s);
-    });
-    const delBtn = document.createElement('button');
-    delBtn.textContent = '✕';
-    delBtn.addEventListener('click', async () => {
-      await serverStore.remove(s.id);
-      renderServers();
-    });
-    li.appendChild(name);
-    li.appendChild(useBtn);
-    li.appendChild(delBtn);
-    ul.appendChild(li);
-  });
-}
-
-function connectToServer(server) {
-  const status = document.getElementById('status');
-  status.textContent = translations[currentLang].startingProxy;
-  const finalCfg = { ...server, localPort: 1080 };
-  browser.storage.local.set({ ...finalCfg, accessUrl: server.accessUrl || '' });
-  browser.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, response => {
-    if (response && response.success) {
-      status.textContent = translations[currentLang].proxyRunning;
-    } else {
-      status.textContent = translations[currentLang].error + (response && response.error);
-    }
-  });
-}
-
-function showLocations(configs) {
-  const label = document.getElementById('location-label');
-  const select = document.getElementById('location');
-  select.innerHTML = '';
-  configs.forEach((cfg, i) => {
+function initLanguageSelect(selected) {
+  elements.languageSelect.innerHTML = '';
+  languageOptions.forEach(({ code, label }) => {
     const option = document.createElement('option');
-    option.value = i;
-    option.textContent = cfg.tag || cfg.name || cfg.host;
+    option.value = code;
+    option.textContent = label;
+    elements.languageSelect.appendChild(option);
+  });
+  if (languageOptions.some(option => option.code === selected)) {
+    elements.languageSelect.value = selected;
+  } else {
+    elements.languageSelect.value = defaultLanguage;
+  }
+}
+
+function setAccessFormOpen(open) {
+  accessFormOpen = open;
+  elements.accessSection.style.display = open ? 'block' : 'none';
+  elements.changeAccess.style.display = !open && storedAccessUrl ? 'inline' : 'none';
+  if (open) {
+    elements.accessInput.value = storedAccessUrl || '';
+    elements.accessInput.focus();
+  }
+}
+
+function formatServerLabel(server) {
+  const name = server.tag || server.name || server.locationName;
+  const host = server.host;
+  const port = server.port || server.server_port || server.serverPort;
+  if (name && host) {
+    return `${name} • ${host}:${port}`;
+  }
+  if (name) {
+    return name;
+  }
+  if (host && port) {
+    return `${host}:${port}`;
+  }
+  return server.id || 'Server';
+}
+
+function getLatencyValue(server) {
+  if (!server) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const direct = typeof server.latencyMs === 'number' ? server.latencyMs : null;
+  if (Number.isFinite(direct)) {
+    return direct;
+  }
+  const metricsLatency = server.metrics && typeof server.metrics.latencyMs === 'number'
+    ? server.metrics.latencyMs
+    : null;
+  if (Number.isFinite(metricsLatency)) {
+    return metricsLatency;
+  }
+  return Number.POSITIVE_INFINITY;
+}
+
+function sortServersByPreference(servers) {
+  return [...servers].sort((a, b) => {
+    const latencyA = getLatencyValue(a);
+    const latencyB = getLatencyValue(b);
+    if (latencyA !== latencyB) {
+      return latencyA - latencyB;
+    }
+    const nameA = (a.tag || a.name || a.locationName || a.host || '').toLowerCase();
+    const nameB = (b.tag || b.name || b.locationName || b.host || '').toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+}
+
+async function refreshLocations(preferredId) {
+  cachedServers = await serverStore.list();
+  const sorted = sortServersByPreference(cachedServers);
+  const select = elements.locationSelect;
+  select.innerHTML = '';
+
+  sorted.forEach(server => {
+    const option = document.createElement('option');
+    option.value = server.id;
+    option.textContent = formatServerLabel(server);
     select.appendChild(option);
   });
-  label.style.display = 'block';
+
+  if (preferredId && sorted.some(server => server.id === preferredId)) {
+    select.value = preferredId;
+  }
+  if (select.selectedIndex === -1 && select.options.length > 0) {
+    select.selectedIndex = 0;
+  }
+
+  cachedServers = sorted;
+
+  const hasLocations = cachedServers.length > 0;
+  elements.locationSection.style.display = hasLocations ? 'block' : 'none';
+  elements.locationNote.style.display = hasLocations ? 'block' : 'none';
+  if (!hasLocations) {
+    setAccessFormOpen(true);
+  } else if (!accessFormOpen && storedAccessUrl) {
+    elements.changeAccess.style.display = 'inline';
+  } else if (!storedAccessUrl) {
+    setAccessFormOpen(true);
+  }
 }
 
-document.addEventListener('DOMContentLoaded', loadConfig);
-
-document.getElementById('url').addEventListener('input', () => {
-  parsedConfigs = null;
-  document.getElementById('location-label').style.display = 'none';
-});
-
-document.getElementById('language').addEventListener('change', (e) => {
-  const lang = e.target.value;
-  if (translations[lang]) {
-    currentLang = lang;
-    browser.storage.local.set({ language: lang });
-    applyTranslations();
-    renderServers();
-
+function getPreviewResponse(message) {
+  switch (message.type) {
+    case 'get-proxy-status':
+      return { success: true, running: false, summary: null };
+    case 'get-censortracker-fallback':
+      return { success: true, data: { servers: [] } };
+    case 'stop-proxy':
+    case 'start-proxy':
+      return PREVIEW_ERROR;
+    default:
+      return PREVIEW_ERROR;
   }
-});
+}
 
-document.getElementById('connect').addEventListener('click', async () => {
-  const url = document.getElementById('url').value.trim();
-  const status = document.getElementById('status');
-  const locSelect = document.getElementById('location');
-  status.textContent = translations[currentLang].startingProxy;
+async function sendMessage(message) {
+  if (isStub) {
+    return getPreviewResponse(message);
+  }
   try {
-    if (parsedConfigs && Array.isArray(parsedConfigs)) {
-      const chosen = parsedConfigs[parseInt(locSelect.value, 10)];
-      const finalCfg = { ...chosen, localPort: 1080, accessUrl: url };
-      browser.storage.local.set(finalCfg);
-      await serverStore.add(finalCfg);
-      renderServers();
-      browser.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, (response) => {
-        if (response && response.success) {
-          status.textContent = translations[currentLang].proxyRunning;
-        } else {
-          status.textContent = translations[currentLang].error + (response && response.error);
-        }
+    return await browser.runtime.sendMessage(message);
+  } catch (error) {
+    if (error && error.message && error.message.includes('Receiving end')) {
+      return null;
+    }
+    if (error && error.message && error.message.includes('preview mode')) {
+      return PREVIEW_ERROR;
+    }
+    throw error;
+  }
+}
+
+function sanitiseConfig(config) {
+  return {
+    method: config.method,
+    password: config.password,
+    host: config.host,
+    port: Number(config.port),
+    tag: config.tag || config.name,
+    localPort: Number(config.localPort || 1080)
+  };
+}
+
+async function connectToServer(serverConfig, urlForStorage = '', options = {}) {
+  const { persist = true } = options;
+  const status = elements.status;
+  const tr = t();
+  const prepared = sanitiseConfig(serverConfig);
+  status.textContent = tr.startingProxy;
+  try {
+    const payload = { lastConfig: prepared };
+    if (persist && urlForStorage) {
+      payload.accessUrl = urlForStorage;
+    }
+    await browser.storage.local.set(payload);
+    if (persist) {
+      await serverStore.add({
+        ...serverConfig,
+        ...prepared,
+        accessUrl: urlForStorage
       });
-      return;
     }
-
-    const cfg = await parseAccessUrl(url);
-    if (Array.isArray(cfg)) {
-      parsedConfigs = cfg;
-      showLocations(cfg);
-      status.textContent = translations[currentLang].selectLocation;
-      return;
-    }
-    const finalCfg = { ...cfg, localPort: 1080, accessUrl: url };
-    browser.storage.local.set(finalCfg);
-    await serverStore.add(finalCfg);
-    renderServers();
-    browser.runtime.sendMessage({ type: 'start-proxy', config: finalCfg }, (response) => {
-      if (response && response.success) {
-        status.textContent = translations[currentLang].proxyRunning;
-      } else {
-        status.textContent = translations[currentLang].error + (response && response.error);
-      }
-    });
-  } catch {
-    status.textContent = translations[currentLang].failedStart;
-  }
-});
-
-document.getElementById('disconnect').addEventListener('click', () => {
-  const status = document.getElementById('status');
-  status.textContent = translations[currentLang].stopping;
-  browser.runtime.sendMessage({ type: 'stop-proxy' }, () => {
-    status.textContent = translations[currentLang].proxyStopped;
-  });
-});
-
-document.getElementById('sync').addEventListener('click', () => {
-  const status = document.getElementById('status');
-  status.textContent = translations[currentLang].syncing;
-  browser.runtime.sendMessage({ type: 'sync' }, response => {
-    if (!response || !response.success) {
-      status.textContent =
-        translations[currentLang].error + (response && response.error);
-      return;
-    }
-    browser.runtime.sendMessage({ type: 'sync-outline' }, resp2 => {
-      if (resp2 && resp2.success) {
-        status.textContent = translations[currentLang].syncComplete;
-        renderServers();
-      } else {
-        status.textContent =
-          translations[currentLang].error + (resp2 && resp2.error);
-      }
-    });
-  });
-});
-
-document.getElementById('diagnostics-btn').addEventListener('click', () => {
-  const output = document.getElementById('diagnostics-output');
-  output.textContent = translations[currentLang].collectingDiagnostics;
-  browser.runtime.sendMessage({ type: 'get-diagnostics' }, response => {
+    const response = await sendMessage({ type: 'start-proxy', config: prepared });
     if (response && response.success) {
-      output.textContent = JSON.stringify(response.data, null, 2);
-    } else {
-      output.textContent = translations[currentLang].diagnosticsFailed;
+      status.textContent = tr.proxyRunning.replace('{port}', prepared.localPort);
+      return;
     }
-  });
-});
-
-document.getElementById('add-domain').addEventListener('click', async () => {
-  const input = document.getElementById('domain-input');
-  await registry.addDomain(input.value);
-  input.value = '';
-  renderDomains();
-});
-
-document.getElementById('add-manager').addEventListener('click', async () => {
-  const url = document.getElementById('manager-url').value.trim();
-  const cert = document.getElementById('manager-cert').value.trim();
-  if (url) {
-    await browser.runtime.sendMessage({
-      type: 'add-outline-manager',
-      apiUrl: url,
-      certSha256: cert
-    });
-    document.getElementById('manager-url').value = '';
-    document.getElementById('manager-cert').value = '';
-    await browser.runtime.sendMessage({ type: 'sync-outline' });
-    renderManagers();
-    renderServers();
+    throw new Error(response && response.error ? response.error : 'Unknown error');
+  } catch (error) {
+    status.textContent = tr.error + (error && error.message ? error.message : '');
+    throw error;
   }
+}
+
+async function attemptFallbackConnection(originalError) {
+  if (isStub) {
+    elements.status.textContent = t().previewModeNotice || '';
+    return false;
+  }
+  const tr = t();
+  elements.status.textContent = tr.attemptingFallback || tr.syncing || '';
+  try {
+    const response = await sendMessage({ type: 'get-censortracker-fallback' });
+    const payload = response && response.success ? response.data || response.result || response : null;
+    const servers = payload && Array.isArray(payload.servers) ? payload.servers : [];
+    if (!servers.length) {
+      const message = tr.fallbackUnavailable || tr.error;
+      const suffix = originalError && originalError.message ? ` ${originalError.message}` : '';
+      elements.status.textContent = message + suffix;
+      return false;
+    }
+    const sorted = sortServersByPreference(servers);
+    let lastError = null;
+    for (const server of sorted) {
+      try {
+        await connectToServer(server, server.accessUrl || '', { persist: false });
+        const provider = payload && (payload.provider || payload.source || payload.endpoint)
+          ? (payload.provider || payload.source || payload.endpoint)
+          : 'CensorTracker';
+        const addon = tr.fallbackConnected
+          ? tr.fallbackConnected.replace('{provider}', provider)
+          : `Fallback connection active via ${provider}`;
+        elements.status.textContent = `${elements.status.textContent}\n${addon}`.trim();
+        await refreshStatus();
+        return true;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    const failure = tr.fallbackFailed || tr.error;
+    const suffix = lastError && lastError.message ? ` ${lastError.message}` : '';
+    elements.status.textContent = failure + suffix;
+    return false;
+  } catch (error) {
+    const message = tr.fallbackUnavailable || tr.error;
+    const suffix = error && error.message ? ` ${error.message}` : '';
+    elements.status.textContent = message + suffix;
+    return false;
+  }
+}
+
+async function refreshStatus() {
+  if (isStub) {
+    elements.status.textContent = t().previewModeNotice || '';
+    return;
+  }
+  try {
+    const response = await sendMessage({ type: 'get-proxy-status' });
+    const tr = t();
+    if (response && response.success && response.running) {
+      const port = response.summary && response.summary.localPort
+        ? response.summary.localPort
+        : 1080;
+      elements.status.textContent = tr.proxyRunning.replace('{port}', port);
+    } else if (response && response.success) {
+      elements.status.textContent = tr.statusIdle;
+    } else {
+      throw new Error(response && response.error ? response.error : 'Unknown error');
+    }
+  } catch (error) {
+    elements.status.textContent = t().error + (error && error.message ? error.message : '');
+  }
+}
+
+function buildServerId(config) {
+  if (config.id) {
+    return config.id;
+  }
+  return `${config.method}:${config.password}@${config.host}:${config.port}`;
+}
+
+async function importAccessKey(url) {
+  const parsed = await parseAccessUrl(url);
+  const configs = Array.isArray(parsed) ? parsed : [parsed];
+  const ids = [];
+  const existing = await serverStore.list();
+  const preserved = existing.filter(server => !server.accessUrl || server.accessUrl === url);
+  await serverStore.save(preserved);
+  for (const config of configs) {
+    const id = buildServerId(config);
+    ids.push(id);
+    await serverStore.add({
+      ...config,
+      id,
+      accessUrl: url,
+      localPort: config.localPort || 1080
+    });
+  }
+  storedAccessUrl = url;
+  await browser.storage.local.set({ accessUrl: url });
+  await refreshLocations(ids[0]);
+  return ids;
+}
+
+async function handleSaveAccess() {
+  const url = elements.accessInput.value.trim();
+  const tr = t();
+  if (!url) {
+    elements.status.textContent = tr.error + tr.urlRequired;
+    return;
+  }
+  elements.status.textContent = tr.syncing || '';
+  try {
+    await importAccessKey(url);
+    setAccessFormOpen(false);
+    elements.status.textContent = tr.accessKeySaved || tr.syncComplete || '';
+  } catch (error) {
+    elements.status.textContent = tr.error + (error && error.message ? error.message : '');
+  }
+}
+
+async function handleConnect() {
+  if (isStub) {
+    elements.status.textContent = t().previewModeNotice || '';
+    return;
+  }
+  const tr = t();
+  const selectedId = elements.locationSelect.value;
+  if (selectedId) {
+    const server = cachedServers.find(item => item.id === selectedId);
+    if (!server) {
+      elements.status.textContent = tr.error + tr.selectLocation;
+      return;
+    }
+    try {
+      await connectToServer(server, server.accessUrl || storedAccessUrl || '');
+      await refreshStatus();
+    } catch (error) {
+      console.error('Failed to connect', error);
+      await attemptFallbackConnection(error);
+    }
+    return;
+  }
+
+  const url = elements.accessInput.value.trim() || storedAccessUrl;
+  if (!url) {
+    elements.status.textContent = tr.error + tr.urlRequired;
+    return;
+  }
+
+  try {
+    const ids = await importAccessKey(url);
+    if (ids.length === 1) {
+      const server = cachedServers.find(item => item.id === ids[0]);
+      if (server) {
+        try {
+          await connectToServer(server, url);
+          await refreshStatus();
+        } catch (error) {
+          console.error('Failed to connect', error);
+          await attemptFallbackConnection(error);
+        }
+      }
+    } else {
+      elements.status.textContent = tr.selectLocation;
+    }
+    setAccessFormOpen(false);
+  } catch (error) {
+    elements.status.textContent = tr.error + (error && error.message ? error.message : '');
+  }
+}
+
+async function handleDisconnect() {
+  if (isStub) {
+    elements.status.textContent = t().previewModeNotice || '';
+    return;
+  }
+  const tr = t();
+  elements.status.textContent = tr.stopping;
+  try {
+    const response = await sendMessage({ type: 'stop-proxy' });
+    if (response && response.success) {
+      elements.status.textContent = tr.proxyStopped;
+    } else {
+      throw new Error(response && response.error ? response.error : 'Unknown error');
+    }
+  } catch (error) {
+    elements.status.textContent = tr.error + (error && error.message ? error.message : '');
+  }
+}
+
+async function init() {
+  const stored = await browser.storage.local.get(['language', 'accessUrl']);
+  if (stored.language) {
+    currentLang = stored.language;
+  }
+  if (stored.accessUrl) {
+    storedAccessUrl = stored.accessUrl;
+    accessFormOpen = false;
+  } else {
+    accessFormOpen = true;
+  }
+  initLanguageSelect(currentLang);
+  applyTranslations();
+  setAccessFormOpen(accessFormOpen);
+  await refreshLocations();
+  await refreshStatus();
+}
+
+elements.saveAccess.addEventListener('click', handleSaveAccess);
+elements.accessInput.addEventListener('keydown', event => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    handleSaveAccess().catch(err => console.error('Import failed', err));
+  }
+});
+elements.connect.addEventListener('click', () => {
+  handleConnect().catch(err => console.error('Connect failed', err));
+});
+elements.disconnect.addEventListener('click', () => {
+  handleDisconnect().catch(err => console.error('Disconnect failed', err));
+});
+elements.changeAccess.addEventListener('click', () => {
+  setAccessFormOpen(true);
+});
+elements.languageSelect.addEventListener('change', async event => {
+  const value = event.target.value;
+  currentLang = value;
+  await browser.storage.local.set({ language: value });
+  applyTranslations();
+  await refreshLocations(elements.locationSelect.value);
+  await refreshStatus();
+});
+elements.openSettings.addEventListener('click', () => {
+  if (browser.runtime.openOptionsPage) {
+    browser.runtime.openOptionsPage();
+  } else {
+    browser.tabs.create({ url: browser.runtime.getURL('options.html') });
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  init().catch(err => console.error('Failed to initialise popup', err));
 });
