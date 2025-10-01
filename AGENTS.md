@@ -28,3 +28,4 @@ The instructions in this file apply to the entire repository.
 
 ## Testing
 - `npm run lint` is currently the only automated check; run it after every change and include its results in the PR description.
+<!-- Updated: 2025-10-01 -->

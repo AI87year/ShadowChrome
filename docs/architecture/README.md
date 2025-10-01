@@ -33,3 +33,4 @@ ShadowChrome's implementation is anchored around a few architectural choices:
    contributors can understand and modify behaviour without touching unrelated code.
 
 Use this directory as the canonical reference for how those pillars translate into code.
+<!-- Updated: 2025-10-01 -->

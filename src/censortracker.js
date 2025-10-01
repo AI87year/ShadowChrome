@@ -15,7 +15,9 @@ export async function loadBundledDomains() {
       cache: 'no-store'
     });
     if (!res.ok) throw new Error(res.statusText);
-    bundled = (await res.json()).map(d => d.toLowerCase());
+    const data = await res.json();
+    const domains = Array.isArray(data) ? data : data.domains || [];
+    bundled = domains.map(d => d.toLowerCase());
     return bundled;
   } catch (e) {
     logger.error('Failed to load bundled domains', e);
@@ -40,3 +42,4 @@ export async function fetchRemoteDomains() {
     return [];
   }
 }
+// Updated: 2025-10-01

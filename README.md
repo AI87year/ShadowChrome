@@ -29,6 +29,8 @@ These principles influence both the current architecture and the long-term roadm
 5. Use the gear-labelled **Settings** button to adjust languages, manage CensorTracker domains, control Outline managers, or run diagnostics on the dedicated options page.
 6. When a direct connection attempt fails, ShadowChrome automatically requests fresh fallback servers from the CensorTracker network and retries with those endpoints before surfacing an error.
 
+> Before sharing the project with others or relying on it in the field, review the experimental-use expectations in [`docs/USAGE_POLICY.md`](docs/USAGE_POLICY.md).
+
 ## Development
 The project embraces openness and encourages experimentation. Developers can explore the source code and contribute enhancements without leaving the JavaScript ecosystem.
 
@@ -60,3 +62,4 @@ The popup experience, Outline Manager integration, and troubleshooting steps are
 
 ## License
 [MIT](LICENSE).
+<!-- Updated: 2025-10-01 -->

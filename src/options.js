@@ -683,3 +683,4 @@ elements.diagnosticsButton.addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
   init().catch(err => console.error('Failed to initialise options page', err));
 });
+// Updated: 2025-10-01

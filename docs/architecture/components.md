@@ -80,3 +80,4 @@ message types. Their handlers live in `background.js`.
 
 Adhering to this inventory ensures new features integrate cleanly without duplicating or
 bypassing existing abstractions.
+<!-- Updated: 2025-10-01 -->
