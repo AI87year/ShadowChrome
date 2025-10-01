@@ -10,13 +10,12 @@ export default class ServerClient {
 
   async fetchFromMirrors(path, timeoutMs = 5000) {
     for (const base of this.mirrors) {
+      const url = base + path;
       try {
-        const resp = await withTimeout(
-          fetch(base + path, { cache: 'no-store' }),
-          timeoutMs
-        );
+        const resp = await withTimeout(fetch(url, { cache: 'no-store' }), timeoutMs);
         if (resp.ok) {
-          return await resp.json();
+          const data = await resp.json();
+          return { data, url, source: base };
         }
       } catch {
         // ignore and continue
@@ -27,9 +26,12 @@ export default class ServerClient {
 
   async updateRegistry() {
     try {
-      const data = await this.fetchFromMirrors('/domains.json');
-      if (Array.isArray(data)) {
-        await this.registry.setDomains(data);
+      const payload = await this.fetchFromMirrors('/domains.json');
+      if (payload && Array.isArray(payload.data)) {
+        await this.registry.setDomains(payload.data, {
+          source: payload.source,
+          endpoint: payload.url
+        });
       }
     } catch (e) {
       console.warn('Registry update failed', e);
@@ -38,9 +40,15 @@ export default class ServerClient {
 
   async updateConfig() {
     try {
-      const cfg = await this.fetchFromMirrors('/config.json');
-      if (cfg && typeof cfg === 'object') {
-        await browser.storage.local.set({ remoteConfig: cfg });
+      const payload = await this.fetchFromMirrors('/config.json');
+      if (payload && payload.data && typeof payload.data === 'object') {
+        await browser.storage.local.set({
+          remoteConfig: {
+            ...payload.data,
+            _source: payload.source,
+            _endpoint: payload.url
+          }
+        });
       }
     } catch (e) {
       console.warn('Config update failed', e);

@@ -4,38 +4,191 @@
   <meta charset="utf-8">
   <title>ShadowChrome</title>
   <style>
-    body { width: 200px; font-family: sans-serif; padding: 10px; }
-    label { display: block; margin-top: 5px; }
-    input, select { width: 100%; }
-    button { margin-top: 10px; width: 100%; }
-    ul { list-style: none; padding: 0; }
-    li { display: flex; justify-content: space-between; margin-top: 4px; }
-    li button { width: auto; margin-top: 0; }
+    :root {
+      color-scheme: dark;
+    }
+
+    body {
+      width: 320px;
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #1c1f2b 0%, #24283a 50%, #161824 100%);
+      color: #f4f5fb;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      background: rgba(12, 14, 24, 0.7);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    h1 {
+      font-size: 16px;
+      margin: 0;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(244, 245, 251, 0.75);
+    }
+
+    input,
+    select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 6px;
+      font-size: 13px;
+      background: rgba(10, 12, 20, 0.65);
+      color: #f4f5fb;
+      backdrop-filter: blur(18px);
+    }
+
+    button {
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(135deg, #3d7bff 0%, #5f5df1 100%);
+      color: #fff;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    button.secondary {
+      background: rgba(255, 255, 255, 0.12);
+      color: #f4f5fb;
+    }
+
+    button.icon {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+
+    button:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    button.link {
+      background: none;
+      color: #9da9ff;
+      padding: 0;
+      text-align: left;
+      border: none;
+      font-weight: 500;
+    }
+
+    button.link:hover {
+      text-decoration: underline;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .panel {
+      background: rgba(12, 14, 24, 0.72);
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(18px);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .button-row button {
+      flex: 1;
+    }
+
+    #status {
+      margin: 0;
+      font-family: 'Roboto Mono', Consolas, monospace;
+      font-size: 11px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: rgba(244, 245, 251, 0.88);
+    }
+
+    .muted {
+      font-size: 12px;
+      color: rgba(244, 245, 251, 0.6);
+      margin: 0;
+    }
   </style>
 </head>
 <body>
-  <label id="language-wrapper"><span id="language-label-text">Language</span> <select id="language">
-    <option value="en">🇺🇸 English</option>
-    <option value="lv">🇱🇻 Latviešu</option>
-    <option value="be">🇧🇾 Беларуская</option>
-    <option value="de">🇩🇪 Deutsch</option>
-    <option value="es">🇪🇸 Español</option>
-    <option value="fr">🇫🇷 Français</option>
-    <option value="ru">🇷🇺 Русский</option>
-  </select></label>
-  <label><span id="url-label-text">Access URL</span> <input id="url" type="text" placeholder="ss:// or ssconf://"></label>
-  <label id="location-label" style="display:none;"><span id="location-label-text">Location</span> <select id="location"></select></label>
-  <button id="connect">Connect</button>
-  <button id="disconnect">Disconnect</button>
-  <button id="sync">Sync</button>
-  <button id="diagnostics-btn">Diagnostics</button>
-  <pre id="status"></pre>
-  <pre id="diagnostics-output"></pre>
-  <section id="domains">
-    <h3 id="domains-title">Proxy Domains</h3>
-    <input id="domain-input" type="text" placeholder="example.com" />
-    <button id="add-domain">Add Domain</button>
-    <ul id="domain-list"></ul>
-  </section>
+  <main>
+    <header>
+      <h1>ShadowChrome</h1>
+      <button id="open-settings" class="icon" title="Settings">⚙️ <span id="settings-label">Settings</span></button>
+    </header>
 
+    <section id="language-section" class="panel">
+      <div>
+        <label id="language-label" for="language-select">Language</label>
+        <select id="language-select"></select>
+      </div>
+      <p class="muted" id="language-note">This choice is shared with the full settings page.</p>
+    </section>
+
+    <section id="access-section" class="panel">
+      <label id="access-label" for="access-input">Access key</label>
+      <input id="access-input" type="text" placeholder="ss:// or ssconf://">
+      <button id="save-access">Save access key</button>
+    </section>
+
+    <section id="location-section" class="panel" style="display:none;">
+      <label id="location-label" for="location-select">Location</label>
+      <select id="location-select"></select>
+      <p class="muted" id="location-note"></p>
+    </section>
+
+    <div class="button-row">
+      <button id="connect">Connect</button>
+      <button id="disconnect" class="secondary">Disconnect</button>
+    </div>
+
+    <button id="change-access" class="link" style="display:none;">Change access key</button>
+
+    <pre id="status" aria-live="polite"></pre>
+  </main>
+
+  <script type="module" src="popup.js"></script>
+</body>
 </html>

@@ -22,5 +22,9 @@ The instructions in this file apply to the entire repository.
 - Always terminate statements with semicolons.
 - Prefer descriptive names for variables and functions.
 
+## UI guidelines
+- Keep the popup focused on lightweight connection controls (import key, choose location, connect/disconnect). Move advanced management to the options page.
+- When modifying user-facing workflows, update both the English and Russian documentation.
+
 ## Testing
 - `npm run lint` is currently the only automated check; run it after every change and include its results in the PR description.

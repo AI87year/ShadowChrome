@@ -51,14 +51,17 @@ export default class OutlineManager {
       const accessUrl = key.accessUrl || key.accessKey || key.url;
       if (!accessUrl) continue;
       try {
-        const cfg = await parseAccessUrl(accessUrl);
-        const server = {
-          ...cfg,
-          tag: key.name || cfg.tag,
-          accessUrl,
-          manager: manager.apiUrl
-        };
-        await this.store.add(server);
+        const parsed = await parseAccessUrl(accessUrl);
+        const configs = Array.isArray(parsed) ? parsed : [parsed];
+        for (const cfg of configs) {
+          const server = {
+            ...cfg,
+            tag: key.name || cfg.tag,
+            accessUrl,
+            manager: manager.apiUrl
+          };
+          await this.store.add(server);
+        }
       } catch (e) {
         console.warn('Failed to parse Outline key', e);
       }

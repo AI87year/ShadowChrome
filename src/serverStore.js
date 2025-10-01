@@ -6,14 +6,19 @@ export default class ServerStore {
     this.listeners = new Set();
   }
 
-  async list() {
+  async _getList() {
     const data = await browser.storage.local.get({ [this.key]: [] });
-    const list = Array.isArray(data[this.key]) ? data[this.key] : [];
-    return list;
+    return Array.isArray(data[this.key]) ? data[this.key] : [];
+  }
+
+  async list() {
+    const list = await this._getList();
+    return list.map(item => ({ ...item }));
   }
 
   async save(list) {
-    await browser.storage.local.set({ [this.key]: list });
+    const plain = list.map(item => ({ ...item }));
+    await browser.storage.local.set({ [this.key]: plain });
     this.emit();
   }
 
@@ -22,19 +27,40 @@ export default class ServerStore {
   }
 
   async add(server) {
-    const list = await this.list();
+    const list = await this._getList();
     const id = server.id || this._makeId(server);
-    server.id = id;
-    if (!list.find(s => s.id === id)) {
-      list.push(server);
-      await this.save(list);
+    const entry = {
+      ...server,
+      id,
+      port: Number(server.port),
+      localPort: Number(server.localPort || 1080)
+    };
+    if (entry.accessUrl === undefined) {
+      entry.accessUrl = '';
     }
+    const existingIndex = list.findIndex(s => s.id === id);
+    if (existingIndex === -1) {
+      list.push(entry);
+    } else {
+      list[existingIndex] = { ...list[existingIndex], ...entry };
+    }
+    await this.save(list);
     return list;
   }
 
   async remove(id) {
-    const list = await this.list();
+    const list = await this._getList();
     const filtered = list.filter(s => s.id !== id);
+    await this.save(filtered);
+    return filtered;
+  }
+
+  async removeByManager(managerUrl) {
+    if (!managerUrl) {
+      return this.list();
+    }
+    const list = await this._getList();
+    const filtered = list.filter(s => s.manager !== managerUrl);
     await this.save(filtered);
     return filtered;
   }

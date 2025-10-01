@@ -22,11 +22,12 @@ These principles influence both the current architecture and the long-term roadm
 2. Click **Load unpacked** and choose the `src` directory that contains the manifest and scripts.
 
 ## Usage
-1. Click the ShadowChrome icon to open the popup interface.
-2. Paste an `ss://` or `ssconf://` access key. The extension retrieves any advertised servers from the Shadowsocks network and prepares them for selection.
-3. If multiple servers are returned, choose a location from the drop‑down.
-4. Press **Connect** to persist the configuration and point Chrome's proxy to the locally hosted Shadowsocks client (`127.0.0.1:1080`).
-5. Press **Disconnect** to clear the proxy configuration and return Chrome to its previous state.
+1. Click the ShadowChrome icon to open the popup interface. A compact header exposes a quick language selector and a gear button that jumps straight to the full settings surface.
+2. Paste an `ss://` or `ssconf://` access key and press **Import access key**. ShadowChrome stores every server exposed by the subscription and collapses the input field so the popup can concentrate on location selection.
+3. If multiple servers are returned, the location picker sorts them by the fastest reported latency. Choose an entry and press **Connect**. The extension persists the configuration and points Chrome's proxy to the locally hosted Shadowsocks client (`127.0.0.1:1080`).
+4. Press **Disconnect** to clear the proxy configuration and return Chrome to its previous state.
+5. Use the gear-labelled **Settings** button to adjust languages, manage CensorTracker domains, control Outline managers, or run diagnostics on the dedicated options page.
+6. When a direct connection attempt fails, ShadowChrome automatically requests fresh fallback servers from the CensorTracker network and retries with those endpoints before surfacing an error.
 
 ## Development
 The project embraces openness and encourages experimentation. Developers can explore the source code and contribute enhancements without leaving the JavaScript ecosystem.
@@ -38,11 +39,22 @@ The project embraces openness and encourages experimentation. Developers can exp
 ## Architecture
 The extension is intentionally simple. Each module has a narrow responsibility that can be reasoned about independently:
 
-- `popup.html` / `popup.js` provide a small HTML/CSS interface with optional location selection.
-- `ssConfig.js` parses `ss://` and `ssconf://` URLs and expands subscription links into concrete server configurations.
+- `popup.html` / `popup.js` provide a compact connection UI focused on importing keys, picking a location, and starting or stopping the proxy.
+- `options.html` / `options.js` host the full management console with language selection, registry controls, saved servers, Outline manager tooling, and diagnostics.
+- `ssConfig.js` parses `ss://` and `ssconf://` URLs using the Outline access-key parser and expands subscription links into concrete server configurations.
+- `registry.js` merges upstream CensorTracker domains, custom overrides, and ignore rules before regenerating the PAC script.
+- `censortrackerServer.js` mirrors the upstream CensorTracker synchronization workflow inside the extension and caches fallback Shadowsocks endpoints supplied by CensorTracker.
 - `background.js` (service worker) applies proxy settings and runs a full Shadowsocks client using `chrome.sockets`.
 
 For a deep dive into workflow and implementation details, see [`docs/DETAILED_DOCUMENTATION.md`](docs/DETAILED_DOCUMENTATION.md).
+
+## User Guide
+
+The popup experience, Outline Manager integration, and troubleshooting steps are documented in detail in [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
+
+## Localized documentation
+
+- [README.ru.md](README.ru.md) — Russian translation of this overview.
 
 ## License
 [MIT](LICENSE).
