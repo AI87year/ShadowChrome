@@ -148,3 +148,4 @@ export function removeFromStorage(keys) {
     browser.storage.local.remove(keys, resolve);
   });
 }
+// Updated: 2025-10-01

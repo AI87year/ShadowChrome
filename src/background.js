@@ -461,3 +461,4 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true, running: !!proxyConfig, summary });
   }
 });
+// Updated: 2025-10-01
