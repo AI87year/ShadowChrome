@@ -62,4 +62,4 @@ The popup experience, Outline Manager integration, and troubleshooting steps are
 
 ## License
 [MIT](LICENSE).
-<!-- Updated: 2025-11-13 -->
+<!-- Updated: 2025-11-17 -->

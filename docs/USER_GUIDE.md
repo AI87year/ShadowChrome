@@ -131,4 +131,4 @@ Removing the extension from Chrome clears every stored value. No data is written
 - Read the architectural breakdown in [`docs/DETAILED_DOCUMENTATION.md`](DETAILED_DOCUMENTATION.md) for module-level insights.
 - Dive into [`docs/architecture/`](architecture/) for sequence diagrams and deeper component discussions.
 - Review the [Usage Policy](USAGE_POLICY.md) before distributing ShadowChrome to colleagues or testers.
-<!-- Updated: 2025-11-13 -->
+<!-- Updated: 2025-11-17 -->
