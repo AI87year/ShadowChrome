@@ -43,15 +43,16 @@ export default class Registry {
   async getDomainEntries() {
     const [base, state] = await Promise.all([this._getBaseDomains(), this._loadState()]);
     const entries = [];
+    const ignored = new Set(state.ignoredHosts);
     if (state.useRegistry) {
       for (const domain of base) {
-        if (!state.ignoredHosts.includes(domain)) {
+        if (!ignored.has(domain)) {
           entries.push({ domain, source: 'registry' });
         }
       }
     }
     for (const domain of state.customProxiedDomains) {
-      if (!state.ignoredHosts.includes(domain)) {
+      if (!ignored.has(domain)) {
         entries.push({ domain, source: 'custom' });
       }
     }
@@ -194,4 +195,4 @@ export default class Registry {
     }
   }
 }
-// Updated: 2025-10-01
+// Updated: 2025-11-13

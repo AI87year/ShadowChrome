@@ -126,26 +126,93 @@ export const isStub = activeBrowser === stubBrowser;
 // APIs regardless of whether the underlying implementation uses callbacks.
 
 export function asyncMessage(message) {
-  return new Promise(resolve => {
-    browser.runtime.sendMessage(message, resolve);
-  });
+  return invokeWithCallback(
+    (...args) => browser.runtime.sendMessage(...args),
+    message
+  );
 }
 
 export function getFromStorage(keys) {
-  return new Promise(resolve => {
-    browser.storage.local.get(keys, resolve);
-  });
+  return invokeWithCallback(
+    (...args) => browser.storage.local.get(...args),
+    keys
+  );
 }
 
 export function setInStorage(obj) {
-  return new Promise(resolve => {
-    browser.storage.local.set(obj, resolve);
-  });
+  return invokeWithCallback(
+    (...args) => browser.storage.local.set(...args),
+    obj
+  );
 }
 
 export function removeFromStorage(keys) {
-  return new Promise(resolve => {
-    browser.storage.local.remove(keys, resolve);
+  return invokeWithCallback(
+    (...args) => browser.storage.local.remove(...args),
+    keys
+  );
+}
+
+function getLastRuntimeError() {
+  const runtime = browser && browser.runtime;
+  const lastError = runtime && runtime.lastError;
+  if (!lastError) {
+    return null;
+  }
+  if (lastError instanceof Error) {
+    return lastError;
+  }
+  const error = new Error(lastError.message || String(lastError));
+  if (lastError.name) {
+    error.name = lastError.name;
+  }
+  return error;
+}
+
+function invokeWithCallback(fn, ...args) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const resolveOnce = value => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      resolve(value);
+    };
+    const rejectOnce = error => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      reject(error);
+    };
+
+    const callback = (...cbArgs) => {
+      const runtimeError = getLastRuntimeError();
+      if (runtimeError) {
+        rejectOnce(runtimeError);
+        return;
+      }
+      if (cbArgs.length === 0) {
+        resolveOnce(undefined);
+      } else if (cbArgs.length === 1) {
+        resolveOnce(cbArgs[0]);
+      } else {
+        resolveOnce(cbArgs);
+      }
+    };
+
+    let maybePromise;
+    try {
+      maybePromise = fn(...args, callback);
+    } catch (error) {
+      rejectOnce(error);
+      return;
+    }
+
+    if (maybePromise && typeof maybePromise.then === 'function') {
+      maybePromise.then(resolveOnce, rejectOnce);
+    }
   });
 }
-// Updated: 2025-10-01
+// Updated: 2025-11-13

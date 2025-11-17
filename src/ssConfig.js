@@ -252,4 +252,4 @@ async function fetchConfig(onlineUrl, defaultTag) {
   }
   throw new Error('Invalid config response');
 }
-// Updated: 2025-10-01
+// Updated: 2025-11-13

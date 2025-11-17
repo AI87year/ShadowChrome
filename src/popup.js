@@ -477,4 +477,4 @@ elements.openSettings.addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
   init().catch(err => console.error('Failed to initialise popup', err));
 });
-// Updated: 2025-10-01
+// Updated: 2025-11-13

@@ -131,4 +131,4 @@ ShadowChrome сохраняет состояние только в `chrome.stora
 - Прочитайте архитектурный обзор в [`docs/DETAILED_DOCUMENTATION.ru.md`](DETAILED_DOCUMENTATION.ru.md), чтобы увидеть, как устроены подсистемы.
 - Загляните в [`docs/architecture/`](architecture/), где собраны диаграммы последовательностей и подробный разбор компонентов.
 - Перед тем как делиться ShadowChrome с коллегами или тестировщиками, обязательно прочитайте [Usage Policy](USAGE_POLICY.md).
-<!-- Updated: 2025-10-01 -->
+<!-- Updated: 2025-11-13 -->

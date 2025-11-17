@@ -35,4 +35,4 @@ export function daysToRenewal(curDate, renewalDate) {
 export function isExpired(curDate, renewalDate) {
   return new Date(curDate) > new Date(renewalDate);
 }
-// Updated: 2025-10-01
+// Updated: 2025-11-13
