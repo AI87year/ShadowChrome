@@ -19,4 +19,4 @@ export async function readServerPassword(serverName) {
   }
   throw new Error('no server password found');
 }
-// Updated: 2025-10-01
+// Updated: 2025-11-13

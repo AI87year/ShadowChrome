@@ -73,4 +73,4 @@ is running. Each workflow links back to the source files that own individual ste
 
 Following these workflows should help newcomers reason about the lifecycle of data and the
 coordination between UI surfaces and the service-worker core.
-<!-- Updated: 2025-10-01 -->
+<!-- Updated: 2025-11-13 -->

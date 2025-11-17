@@ -285,4 +285,4 @@ export function scheduleCensorTrackerSync(registry) {
 }
 
 export { CONFIG_ENDPOINTS };
-// Updated: 2025-10-01
+// Updated: 2025-11-13

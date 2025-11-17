@@ -12,6 +12,7 @@ export default class ProxyManager {
     const domains = await this.registry.getDomains();
     const pacScript = generatePac(domains, localPort);
     if (isFirefox && browser.proxy && browser.proxy.register) {
+      await this._cleanupFirefoxPac();
       const blob = new Blob([pacScript], { type: 'application/x-ns-proxy-autoconfig' });
       const url = URL.createObjectURL(blob);
       await browser.proxy.register(url);
@@ -25,12 +26,8 @@ export default class ProxyManager {
   }
 
   async disable() {
-    if (isFirefox && browser.proxy && browser.proxy.unregister) {
-      if (this.currentPacUrl) {
-        await browser.proxy.unregister(this.currentPacUrl);
-        URL.revokeObjectURL(this.currentPacUrl);
-        this.currentPacUrl = null;
-      }
+    if (isFirefox) {
+      await this._cleanupFirefoxPac();
     } else if (isChrome) {
       await browser.proxy.settings.clear({});
     }
@@ -42,5 +39,14 @@ export default class ProxyManager {
       await this.enable(localPort);
     }
   }
+
+  async _cleanupFirefoxPac() {
+    if (!isFirefox || !browser.proxy || !browser.proxy.unregister || !this.currentPacUrl) {
+      return;
+    }
+    await browser.proxy.unregister(this.currentPacUrl);
+    URL.revokeObjectURL(this.currentPacUrl);
+    this.currentPacUrl = null;
+  }
 }
-// Updated: 2025-10-01
+// Updated: 2025-11-13

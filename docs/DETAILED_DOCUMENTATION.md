@@ -336,4 +336,4 @@ review we verified the following assumptions still hold:
 ## License
 
 MIT – see [LICENSE](../LICENSE).
-<!-- Updated: 2025-10-01 -->
+<!-- Updated: 2025-11-13 -->
