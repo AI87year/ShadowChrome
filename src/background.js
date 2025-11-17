@@ -154,7 +154,23 @@ async function processRemote(conn) {
 
 function startClient(config, cb) {
   logger.info('Starting client', { port: config.localPort });
+  if (serverSocketId !== null) {
+    logger.warn('Existing client detected, restarting before binding');
+    stopClient((ok, err) => {
+      if (!ok) {
+        cb(false, err);
+        return;
+      }
+      startClient(config, cb);
+    });
+    return;
+  }
   browser.sockets.tcpServer.create({}, createInfo => {
+    if (browser.runtime.lastError) {
+      logger.error('Failed to create server socket', browser.runtime.lastError);
+      cb(false, browser.runtime.lastError.message);
+      return;
+    }
     serverSocketId = createInfo.socketId;
     browser.sockets.tcpServer.listen(
       serverSocketId,
@@ -163,6 +179,9 @@ function startClient(config, cb) {
       () => {
         if (browser.runtime.lastError) {
           logger.error('Failed to listen', browser.runtime.lastError);
+          browser.sockets.tcpServer.close(serverSocketId, () => {
+            serverSocketId = null;
+          });
           cb(false, browser.runtime.lastError.message);
           return;
         }
@@ -304,18 +323,19 @@ function stopClient(cb) {
   });
   connections.clear();
   remoteMap.clear();
-  browser.sockets.tcpServer.close(serverSocketId, () => {
+  const socketId = serverSocketId;
+  serverSocketId = null;
+  browser.sockets.tcpServer.onAccept.removeListener(onAccept);
+  browser.sockets.tcp.onReceive.removeListener(onReceive);
+  browser.sockets.tcp.onReceiveError.removeListener(onReceiveError);
+  browser.sockets.tcpServer.close(socketId, () => {
     if (browser.runtime.lastError) {
       logger.error('Failed to close server', browser.runtime.lastError);
       cb(false, browser.runtime.lastError.message);
-    } else {
-      browser.sockets.tcpServer.onAccept.removeListener(onAccept);
-      browser.sockets.tcp.onReceive.removeListener(onReceive);
-      browser.sockets.tcp.onReceiveError.removeListener(onReceiveError);
-      serverSocketId = null;
-      logger.info('Server closed');
-      cb(true);
+      return;
     }
+    logger.info('Server closed');
+    cb(true);
   });
 }
 
