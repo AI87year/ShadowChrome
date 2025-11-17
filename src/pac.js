@@ -21,4 +21,4 @@ export function generatePac(domains, port) {
   lines.push('}');
   return lines.join('\n');
 }
-// Updated: 2025-11-13
+// Updated: 2025-11-17

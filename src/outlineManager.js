@@ -94,4 +94,4 @@ export default class OutlineManager {
   }
 }
 
-// Updated: 2025-11-13
+// Updated: 2025-11-17

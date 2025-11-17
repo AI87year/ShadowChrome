@@ -20,4 +20,4 @@ platform capabilities. By cloning or distributing this repository you agree to t
 
 By continuing to use ShadowChrome you acknowledge these conditions and accept full responsibility for how you and your
 collaborators interact with the software.
-<!-- Updated: 2025-11-13 -->
+<!-- Updated: 2025-11-17 -->

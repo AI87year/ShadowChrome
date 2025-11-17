@@ -44,4 +44,4 @@ export const AEAD_CIPHERS = [
 export function isSupportedCipher(cipherName) {
   return AEAD_CIPHERS.some(cipher => cipher.name === cipherName);
 }
-// Updated: 2025-11-13
+// Updated: 2025-11-17
