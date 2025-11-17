@@ -41,14 +41,21 @@ async function bootstrapDomains() {
   }
 }
 
-bootstrapDomains();
+bootstrapDomains().catch(error => logger.error('Failed to bootstrap domains', error));
 
-logger.load().then(() => logger.info('Background script initialized'));
+logger
+  .load()
+  .then(() => logger.info('Background script initialized'))
+  .catch(error => logger.error('Failed to load persisted logs', error));
 
 browser.storage.onChanged.addListener(async (changes, area) => {
   if (area === 'local' && (changes.domainRegistry || changes.registryState)) {
     const port = proxyConfig ? proxyConfig.localPort : 1080;
-    await proxyManager.refresh(port);
+    try {
+      await proxyManager.refresh(port);
+    } catch (error) {
+      logger.error('Failed to refresh proxy after registry change', error);
+    }
   }
 });
 
