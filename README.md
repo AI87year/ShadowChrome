@@ -59,6 +59,9 @@ The popup experience, Outline Manager integration, and troubleshooting steps are
 ## Localized documentation
 
 - [README.ru.md](README.ru.md) — Russian translation of this overview.
+- [README.be.md](README.be.md) — Belarusian translation of this overview.
+- [README.uk.md](README.uk.md) — Ukrainian translation of this overview.
+- [README.tg.md](README.tg.md) — Tajik translation of this overview.
 
 ## License
 [MIT](LICENSE).
