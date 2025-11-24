@@ -6,6 +6,9 @@ The instructions in this file apply to the entire repository.
 - Use Node.js 18 or newer.
 - Run `npm install` once to install dependencies.
 - Before committing, execute `npm run lint` and ensure it passes with no errors or warnings.
+- Treat modernization work as an ongoing practice: when updating internals, reference current MV3 and web crypto guidance and leave short notes in `docs/` summarizing the rationale.
+- When agents work on this project, they must proactively scan the codebase and relevant internet sources for contemporary best practices and forward-looking ideas, then integrate the most valuable findings to keep the extension aligned with cutting-edge approaches.
+- For substantial refactors, prefer incremental, testable slices rather than large unreviewable drops.
 - Prefer modern JavaScript features: ES modules, `const`/`let`, and arrow functions.
 - Avoid committing build artifacts or files in `node_modules`.
 

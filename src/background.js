@@ -361,146 +361,162 @@ function stopClient(cb) {
   });
 }
 
+function startClientAsync(config) {
+  return new Promise((resolve, reject) => {
+    startClient(config, (ok, err) => {
+      if (ok) {
+        resolve();
+        return;
+      }
+      reject(new Error(err || 'Failed to start proxy client'));
+    });
+  });
+}
+
+function stopClientAsync() {
+  return new Promise((resolve, reject) => {
+    stopClient((ok, err) => {
+      if (ok) {
+        resolve();
+        return;
+      }
+      reject(new Error(err || 'Failed to stop proxy client'));
+    });
+  });
+}
+
+async function handleStartProxy(config) {
+  logger.info('Start proxy requested');
+  proxyConfig = config;
+  try {
+    await startClientAsync(config);
+    await proxyManager.enable(config.localPort);
+    return { success: true };
+  } catch (error) {
+    proxyConfig = null;
+    throw error;
+  }
+}
+
+async function handleStopProxy() {
+  logger.info('Stop proxy requested');
+  await stopClientAsync();
+  await proxyManager.disable();
+  proxyConfig = null;
+  return { success: true };
+}
+
+async function handleAddOutlineManager(message) {
+  await outlineManager.addManager(message.apiUrl, message.certSha256);
+  try {
+    await outlineManager.syncManager({
+      apiUrl: message.apiUrl,
+      certSha256: message.certSha256
+    });
+    return { success: true };
+  } catch (syncErr) {
+    logger.warn('Outline manager sync failed after add', syncErr);
+    return { success: true, warning: syncErr.message };
+  }
+}
+
+function getProxyStatus() {
+  const summary = proxyConfig
+    ? {
+        host: proxyConfig.host,
+        port: proxyConfig.port,
+        localPort: proxyConfig.localPort || 1080,
+        tag: proxyConfig.tag || null
+      }
+    : null;
+  return { success: true, running: !!proxyConfig, summary };
+}
+
+const messageHandlers = {
+  'start-proxy': message => handleStartProxy(message.config),
+  'stop-proxy': () => handleStopProxy(),
+  sync: async () => {
+    logger.info('Sync requested');
+    await serverClient.syncAll();
+    return { success: true };
+  },
+  'sync-censortracker': async () => {
+    const result = await syncCensorTracker(registry);
+    return { success: !!result.success, result };
+  },
+  'get-censortracker-fallback': async () => {
+    const data = await getStoredCensorTrackerFallback();
+    return { success: true, data: data || { servers: [] } };
+  },
+  'get-diagnostics': async () => {
+    logger.info('Diagnostics requested');
+    const data = await collectDiagnostics();
+    return { success: true, data };
+  },
+  'add-outline-manager': message => handleAddOutlineManager(message),
+  'remove-outline-manager': async message => {
+    await outlineManager.removeManager(message.apiUrl);
+    await serverStore.removeByManager(message.apiUrl);
+    return { success: true };
+  },
+  'list-outline-managers': async () => {
+    const list = await outlineManager.listManagers();
+    return { success: true, list };
+  },
+  'sync-outline': async () => {
+    await outlineManager.syncAll();
+    return { success: true };
+  },
+  'remove-server': async message => {
+    await serverStore.remove(message.id);
+    return { success: true };
+  },
+  'list-servers': async () => {
+    const list = await serverStore.list();
+    return { success: true, list };
+  },
+  'get-registry-state': async () => {
+    const state = await registry.getRegistryState();
+    return { success: true, state };
+  },
+  'set-registry-enabled': async message => {
+    await registry.toggleRegistry(message.enabled);
+    return { success: true };
+  },
+  'add-ignored-domain': async message => {
+    await registry.mergeIgnoredHosts([message.domain]);
+    return { success: true };
+  },
+  'remove-ignored-domain': async message => {
+    await registry.removeIgnoredHost(message.domain);
+    return { success: true };
+  },
+  'get-proxy-status': () => getProxyStatus()
+};
+
+function respondAsync(handler, message, sendResponse) {
+  handler(message)
+    .then(result => {
+      sendResponse(result);
+    })
+    .catch(error => {
+      logger.error('Message handler failed', {
+        type: message.type,
+        error: error && error.message ? error.message : error
+      });
+      sendResponse({
+        success: false,
+        error: error && error.message ? error.message : 'Unexpected error'
+      });
+    });
+}
+
 // ProxyManager handles PAC generation and proxy settings
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'start-proxy') {
-    logger.info('Start proxy requested');
-    proxyConfig = message.config;
-    startClient(proxyConfig, (ok, err) => {
-      if (!ok) {
-        sendResponse({ success: false, error: err });
-        return;
-      }
-      proxyManager
-        .enable(proxyConfig.localPort)
-        .then(() => sendResponse({ success: true }))
-        .catch(e => sendResponse({ success: false, error: e.message }));
-    });
-    return true;
-  } else if (message.type === 'stop-proxy') {
-    logger.info('Stop proxy requested');
-    stopClient((ok, err) => {
-      proxyManager
-        .disable()
-        .then(() => {
-          if (!ok) {
-            sendResponse({ success: false, error: err });
-          } else {
-            proxyConfig = null;
-            sendResponse({ success: true });
-          }
-        })
-        .catch(e => sendResponse({ success: false, error: e.message }));
-    });
-    return true;
-  } else if (message.type === 'sync') {
-    logger.info('Sync requested');
-    serverClient
-      .syncAll()
-      .then(() => sendResponse({ success: true }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'sync-censortracker') {
-    syncCensorTracker(registry)
-      .then(result => sendResponse({ success: !!result.success, result }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'get-censortracker-fallback') {
-    getStoredCensorTrackerFallback()
-      .then(data => sendResponse({ success: true, data: data || { servers: [] } }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'get-diagnostics') {
-    logger.info('Diagnostics requested');
-    collectDiagnostics()
-      .then(data => sendResponse({ success: true, data }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'add-outline-manager') {
-    (async () => {
-      try {
-        await outlineManager.addManager(message.apiUrl, message.certSha256);
-        try {
-          await outlineManager.syncManager({
-            apiUrl: message.apiUrl,
-            certSha256: message.certSha256
-          });
-          sendResponse({ success: true });
-        } catch (syncErr) {
-          logger.warn('Outline manager sync failed after add', syncErr);
-          sendResponse({ success: true, warning: syncErr.message });
-        }
-      } catch (err) {
-        sendResponse({ success: false, error: err.message });
-      }
-    })();
-    return true;
-  } else if (message.type === 'remove-outline-manager') {
-    outlineManager
-      .removeManager(message.apiUrl)
-      .then(() => serverStore.removeByManager(message.apiUrl))
-      .then(() => sendResponse({ success: true }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'list-outline-managers') {
-    outlineManager
-      .listManagers()
-      .then(list => sendResponse({ success: true, list }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'sync-outline') {
-    outlineManager
-      .syncAll()
-      .then(() => sendResponse({ success: true }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'remove-server') {
-    serverStore
-      .remove(message.id)
-      .then(() => sendResponse({ success: true }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'list-servers') {
-    serverStore
-      .list()
-      .then(list => sendResponse({ success: true, list }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'get-registry-state') {
-    registry
-      .getRegistryState()
-      .then(state => sendResponse({ success: true, state }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'set-registry-enabled') {
-    registry
-      .toggleRegistry(message.enabled)
-      .then(() => sendResponse({ success: true }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'add-ignored-domain') {
-    registry
-      .mergeIgnoredHosts([message.domain])
-      .then(() => sendResponse({ success: true }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'remove-ignored-domain') {
-    registry
-      .removeIgnoredHost(message.domain)
-      .then(() => sendResponse({ success: true }))
-      .catch(e => sendResponse({ success: false, error: e.message }));
-    return true;
-  } else if (message.type === 'get-proxy-status') {
-    const summary = proxyConfig
-      ? {
-          host: proxyConfig.host,
-          port: proxyConfig.port,
-          localPort: proxyConfig.localPort || 1080,
-          tag: proxyConfig.tag || null
-        }
-      : null;
-    sendResponse({ success: true, running: !!proxyConfig, summary });
-  }
+  const handler = messageHandlers[message.type];
+  if (!handler) return;
+  respondAsync(handler, message, sendResponse);
+  return true;
 });
-// Updated: 2025-11-17
+// Updated: 2025-02-24
