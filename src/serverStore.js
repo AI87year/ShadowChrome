@@ -1,5 +1,10 @@
 import { browser } from './browser-api.js';
 
+// ServerStore is the canonical writer for chrome.storage.local.servers and
+// related selectors. It normalizes identifiers and ports so the background
+// worker can rely on consistent shapes regardless of whether entries were
+// imported from Outline, Sheldu Socks mirrors, or manual forms.
+
 export default class ServerStore {
   constructor() {
     this.key = 'servers';

@@ -13,6 +13,28 @@ import {
 import ServerStore from './serverStore.js';
 import OutlineManager from './outlineManager.js';
 
+/**
+ * Manifest V3 service worker that orchestrates the full Shadowsocks data path.
+ *
+ * Responsibilities
+ * - keep the embedded client alive and route TCP sockets between the browser and
+ *   the chosen remote server;
+ * - install PAC scripts through ProxyManager based on the active registry;
+ * - coordinate registry refreshes, Outline syncs, and CensorTracker downloads;
+ * - expose a compact message surface that both UI documents depend on.
+ *
+ * Invariants
+ * - only one Shadowsocks client is bound at a time (tracked via serverSocketId);
+ * - connections are keyed by client socket id and cleaned up when either side
+ *   closes;
+ * - background listeners must remain idempotent because MV3 can restart the
+ *   worker at any time.
+ *
+ * When evolving the Sheldu Socks feature set, use this file as the integration
+ * point so that protocol changes and registry rules remain consistent across
+ * popup and options workflows.
+ */
+
 let proxyConfig = null;
 let serverSocketId = null;
 

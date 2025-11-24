@@ -9,6 +9,9 @@ the concrete source files in `src/`.
   responsibility notes and entry points for further reading.
 - [`workflows.md`](workflows.md) — walkthroughs of the main runtime flows: importing
   keys, connecting to proxies, mirroring registries, and reconciling storage.
+- [`runtime-lifecycle.md`](runtime-lifecycle.md) — service-worker boot sequence,
+  message contracts, and socket/registry ownership notes to keep Sheldu Socks
+  behaviours consistent.
 - [`proxy-switcher-research.md`](proxy-switcher-research.md) — external inspiration for
   profile management, PAC generation, and proxy-switching UX we can adapt without
   licensing conflicts.

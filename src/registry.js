@@ -1,5 +1,11 @@
 import { browser } from './browser-api.js';
 
+// Registry mediates between bundled blocklists, custom overrides, and ignored
+// hosts. It is the single source of truth for the PAC generator, so any future
+// Sheldu Socks routing modes should plug into this class rather than writing
+// directly to chrome.storage. All mutations trigger change listeners to keep
+// the popup and service worker aligned.
+
 const STATE_KEY = 'registryState';
 
 function normaliseDomain(domain) {
