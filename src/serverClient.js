@@ -1,6 +1,11 @@
 import { browser } from './browser-api.js';
 import { fetchWithTimeout } from './utils/fetchWithTimeout.js';
 
+// ServerClient fetches mirrored datasets (domains, configs) on a schedule. It
+// encapsulates retry behaviour and metadata tagging so background.js can stay
+// focused on the Shadowsocks client. Adjust mirror lists or Sheldu Socks
+// backends here to keep network policy changes isolated from UI code.
+
 export default class ServerClient {
   constructor(registry, mirrors = []) {
     this.registry = registry;

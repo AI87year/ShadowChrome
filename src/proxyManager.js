@@ -1,6 +1,12 @@
 import { browser, isFirefox, isChrome } from './browser-api.js';
 import { generatePac } from './pac.js';
 
+// ProxyManager owns all PAC lifecycle operations. It accepts normalized domain
+// registries and exposes enable/disable routines that work in both Chrome and
+// Firefox. By keeping this logic contained, the background worker can refresh
+// rules without duplicating browser-specific quirks or Sheldu Socks routing
+// defaults.
+
 export default class ProxyManager {
   constructor(registry) {
     this.registry = registry;
